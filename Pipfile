@@ -13,6 +13,8 @@ qiskit-aer = "*"
 qiskit-ibm-runtime = "*"
 pylatexenc = "*"
 pandas = "*"
+qiskit-experiments = "*"
+pyyaml = "*"
 
 [dev-packages]
 

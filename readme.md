@@ -1,2 +1,3 @@
-# Quantum Wavefield Simulation 
-Version: v0.0.1
+# Quantum Wavefield Simulation
+Author: Malte Schade
+Version: v0.0.2

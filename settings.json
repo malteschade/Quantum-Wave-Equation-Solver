@@ -1,5 +1,5 @@
 {
-    "simID" : "20230720T122325",
+    "simID" : "",
     "nodes" : 2,
     "m" : [1,1],
     "k" : [3,2,2],
@@ -8,7 +8,7 @@
     "dt" : 0.25,
     "steps": 20,
     "hardware" : "ibmq",
-    "model" : "qasm_simulator",
+    "model" : "perth",
     "shots" : 10000,
     "seed" : 0,
     "optimization" : 3,

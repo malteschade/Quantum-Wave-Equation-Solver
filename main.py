@@ -20,8 +20,7 @@ import numpy as np
 # own modules
 from func.utility import hamiltonian, prepare_state, plot_results
 from func.simulation_classical import simulate_classical
-from func.simulation_quantum import simulate_quantum, load_job_ids
-from func.tomography import run_tomography
+from func.simulation_quantum import simulate_quantum, load_job_ids, run_tomography
 
 
 __author__ = '{author}'
@@ -83,8 +82,10 @@ def main():
         times = np.arange(dt, dt*(steps+1), dt)
 
         # Simulate classical
+        print('Simulating classical...')
         states_cl = simulate_classical(state0, times, DV)
         np.savetxt(os.path.join(path_save, simID, 'sim_classical.csv'), states_cl, delimiter=",")
+        print('Classical simulation finished.')
         
         # Save metadata
         metadata = {"times" : times.tolist(), "state0" : state0, "psi0" : psi0.tolist(), "norm0" : norm0,
@@ -92,12 +93,13 @@ def main():
         pickle.dump(metadata, open(os.path.join(path_save, simID, 'metadata.pkl'), 'wb'))
         
         # Simulate quantum
+        print('Simulating quantum...')
         job_id_path = os.path.join(path_save, simID, 'job_ids.json')
         measurements, observables = simulate_quantum(psi0, H, times, s['hardware'], s['model'], s['shots'],
                                         s['optimization'], s['resilience'], s['seed'], save_path=job_id_path)
         pickle.dump(measurements, open(os.path.join(path_save, simID, 'measurements.pkl'), 'wb'))
         json.dump(observables, open(os.path.join(path_save, simID, 'observables.json'), 'w'))
-        print('New simulation finished.')
+        print('Quantum simulation finished.')
     
     
     # Load existing simulation
@@ -121,8 +123,12 @@ def main():
         # Load variables
         metadata = pickle.load(open(os.path.join(path_save, s["simID"], 'metadata.pkl'), 'rb'))
         times = metadata["times"]
+        state0 = metadata["state0"]
+        psi0 = np.array(metadata["psi0"])
+        norm0 = metadata["norm0"]
+        INV_T = np.array(metadata["INV_T"])
         states_cl = np.loadtxt(os.path.join(path_save, s["simID"], 'sim_classical.csv'), delimiter=",")
-        observables = json.load(open(os.path.join(path_save, s["simID"], 'bases.json'), 'r'))
+        observables = json.load(open(os.path.join(path_save, s["simID"], 'observables.json'), 'r'))
         
     
     # Process quantum results
@@ -131,7 +137,8 @@ def main():
     
     # Plot results
     plot_results(states_cl, times, 'classical')
-    
+    plot_results(states_qc, times, 'quantum')
+    plot_results(states_cl-states_qc, times, 'difference')
     
     
 if __name__ == '__main__':
