@@ -22,12 +22,7 @@ __email__ = '{contact_email}'
 __status__ = '{dev_status}'
 
 
-def simulate_classical(state0, nodes, times, DV):
-    # Define utility matrices
-    Z = np.zeros((nodes,nodes))
-    I = np.identity(nodes)
-    
-    # Perform simulation
+def simulate_classical(state0, times, DV):
+    # Perform classical simulation
     states = odeint(lambda y, t: DV @ y, state0, times)
-    
     return states

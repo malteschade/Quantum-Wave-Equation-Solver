@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5ddba71e0dae0c4d409f77409d6e5315c30fa863acf0294b96113f1f37e3fb9b"
+            "sha256": "ea8f59b34f9244ea2c6a6ab86e69de78430e9351e7312416a4cbdc71ff20ab23"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,14 +16,6 @@
         ]
     },
     "default": {
-        "asteval": {
-            "hashes": [
-                "sha256:2761750c184d97707c292b62df3b10e330a809a2201721acc435a2b89a114263",
-                "sha256:a2da066b6696dba9835c5f7dec63e0ffb5bd2b4e3bb5f0b9a604aeafb17d833d"
-            ],
-            "markers": "python_version >= '3.7'",
-            "version": "==0.9.31"
-        },
         "certifi": {
             "hashes": [
                 "sha256:0f0d56dc5a6ad56fd4ba36484d6cc34451e1c6548c61daad8c320169f91eddc7",
@@ -312,13 +304,6 @@
             "markers": "python_version >= '3.8'",
             "version": "==4.41.0"
         },
-        "future": {
-            "hashes": [
-                "sha256:34a17436ed1e96697a86f9de3d15a3b0be01d8bc8de9c1dffd59fb8234ed5307"
-            ],
-            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-            "version": "==0.18.3"
-        },
         "ibm-cloud-sdk-core": {
             "hashes": [
                 "sha256:a985f147e8d78cc7eaaf127ada3e5da37dc46e37dea184aaf8878caced781674"
@@ -413,14 +398,6 @@
             "markers": "python_version >= '3.7'",
             "version": "==1.4.4"
         },
-        "lmfit": {
-            "hashes": [
-                "sha256:044a052a11a61da0576274504c17eb7e2803b41128e25821e96632207f23c88c",
-                "sha256:3101bb16236179cc2e332202d621109271269dcb8edaa8983eecbffdaf57eb0c"
-            ],
-            "markers": "python_version >= '3.7'",
-            "version": "==1.2.2"
-        },
         "matplotlib": {
             "hashes": [
                 "sha256:070f8dddd1f5939e60aacb8fa08f19551f4b0140fab16a3669d5cd6e9cb28fc8",
@@ -474,14 +451,6 @@
                 "sha256:a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c"
             ],
             "version": "==1.3.0"
-        },
-        "multiset": {
-            "hashes": [
-                "sha256:5247391995a92b61a70d1fc3596fd5004346e37400ac6bdcb9549f3ab048a0c0",
-                "sha256:e45671cae8385a8e6248a9b07a3a83280c2d0cc4312713058cfbacdc5ec9973e"
-            ],
-            "markers": "python_version >= '3.7'",
-            "version": "==3.0.1"
         },
         "ntlm-auth": {
             "hashes": [
@@ -684,6 +653,13 @@
             "markers": "python_version >= '3.7'",
             "version": "==2.8.0"
         },
+        "pylatexenc": {
+            "hashes": [
+                "sha256:3dd8fd84eb46dc30bee1e23eaab8d8fb5a7f507347b23e5f38ad9675c84f40d3"
+            ],
+            "index": "pypi",
+            "version": "==2.10"
+        },
         "pyparsing": {
             "hashes": [
                 "sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb",
@@ -759,36 +735,12 @@
             "index": "pypi",
             "version": "==0.12.2"
         },
-        "qiskit-dynamics": {
-            "hashes": [
-                "sha256:4debee2b2632bb5d9cb2924d2bb503f718e88506351b0dee7a3c7775ff0faa5e",
-                "sha256:a419e5229d6bc26b3b05bd6656fe587c1b5d65f25bc064cf87da6b08f9154e34"
-            ],
-            "markers": "python_version >= '3.8'",
-            "version": "==0.4.1"
-        },
-        "qiskit-experiments": {
-            "hashes": [
-                "sha256:287e2253eb493505314361ebd645011b494be396a3843c6bee2bb13c9e68e3c5",
-                "sha256:4c95cb1c240e9c9454168d4c60d50d39015e68b9686eba0e9b0b50ea79e9c9fb"
-            ],
-            "index": "pypi",
-            "version": "==0.5.3"
-        },
-        "qiskit-ibm-experiment": {
-            "hashes": [
-                "sha256:4afc73caffeb8ef1514f259f951dc02f34b8375a574c7e29831a8edd02174fc6",
-                "sha256:e78e374ae8bd6ec64cf27606e73981ab945ede9edf5222ccb3395ced3fb2e72b"
-            ],
-            "markers": "python_version >= '3.8'",
-            "version": "==0.3.3"
-        },
         "qiskit-ibm-provider": {
             "hashes": [
                 "sha256:8370dbc69179fc047401385814fc34fc8cbf297d56f162d843f94e9d48ce33f7",
                 "sha256:ade331ac2c418e317b5322b68bde50c10a20b6fe8fb4928ee30ee6c1d6ba7480"
             ],
-            "index": "pypi",
+            "markers": "python_version >= '3.8'",
             "version": "==0.6.1"
         },
         "qiskit-ibm-runtime": {
@@ -1035,13 +987,6 @@
             ],
             "markers": "python_version >= '2'",
             "version": "==2023.3"
-        },
-        "uncertainties": {
-            "hashes": [
-                "sha256:4040ec64d298215531922a68fa1506dc6b1cb86cd7cca8eca848fcfe0f987151",
-                "sha256:80111e0839f239c5b233cb4772017b483a0b7a1573a581b92ab7746a35e6faab"
-            ],
-            "version": "==3.1.7"
         },
         "urllib3": {
             "hashes": [

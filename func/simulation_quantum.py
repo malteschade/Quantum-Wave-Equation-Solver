@@ -7,10 +7,16 @@
 """
 
 # built-in modules
+import warnings
+import json
+warnings.filterwarnings("ignore")
+from time import sleep
 from itertools import product
 
 # other modules
 import numpy as np
+# import matplotlib as mpl
+# mpl.use('WebAgg')
 
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.library import HGate, SdgGate
@@ -50,13 +56,13 @@ meas_circuits = {"Z" : meas_z, "X" : meas_x, "Y" : meas_y}
 
 # -------- QUANTUM SIMULATION --------
 def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
-             optimization=1, seed=0, max_time="5m"):
+             optimization=1, resilience=1, seed=None, save_path=None):
     
     # Determine number of necessary qubits
     num_qubits = int(np.log2(hamiltonian.shape[0]))
     
     # Determine state tomography bases
-    bases = product("ZXY", repeat=num_qubits)
+    bases = list(product("ZXY", repeat=num_qubits))
 
 
     # Prepare circuits
@@ -100,7 +106,7 @@ def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
         
         elif model == "perth":
             backend = FakePerth()
-            coupling_map = backend.configuration().coupling_map
+            coupling_map = backend.coupling_map
             noise_model = NoiseModel.from_backend(backend)
             
             sampler = AerSampler(
@@ -114,7 +120,7 @@ def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
             )
 
         else:
-            raise Exception("Invalid hardware model for local simulation.")
+            raise Exception("Invalid model selection for local simulation.")
         
         # Run circuits in groups
         jobs = []
@@ -128,7 +134,8 @@ def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
     elif hardware == "ibmq":
         # Get Qiskit Runtime service and set options
         service = QiskitRuntimeService()
-        options = Options(optimization_level=optimization, shots=shots)
+        options = Options(optimization_level=optimization,
+                          resilience_level=resilience)
         
         # Define cloud sampler primitive backend
         if model == "qasm_simulator":
@@ -138,22 +145,55 @@ def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
             backend = service.backend("ibm_perth")
             
         else:
-            raise Exception("Invalid hardware model for cloud simulation.")
+            raise Exception("Invalid model selection for cloud simulation.")
         
         # Run jobs in Session
-        with Session(service=service, backend=backend, max_time=max_time) as session:
+        with Session(service=service, backend=backend) as session:
             # Initiate sampler
             sampler = Sampler(session=session, options=options)
             
             # Run circuits in groups
-            jobs = []
+            jobs, job_ids = [], []
             for circuits in circuit_groups:
-                jobs.append(sampler.run(circuits))
+                job = sampler.run(circuits, shots=shots)
+                job_ids.append(job.job_id())
+                jobs.append(job)
 
+            # Save job IDs
+            json.dump(job_ids, open(save_path, "w"))
+            
+            # Wait for jobs to complete
+            completed = False
+            while completed == False:
+                if all([job.status().name == "DONE" for job in jobs]):
+                    completed = True
+                sleep(30)
+            
             # Get results
             result_groups = [job.result() for job in jobs]
             
             # Close session
             session.close()
+    
+    else:
+        raise Exception("Invalid hardware selection.")
+    
+    return result_groups
+
+
+def load_job_ids(job_ids):
+    # Get Qiskit Runtime service
+    service = QiskitRuntimeService()
+    
+    # Load Jobs
+    result_groups = []
+    jobs = [service.job(job_id) for job_id in job_ids]
+    
+    # Check if all jobs are completed
+    if not all([job.status().name == "DONE" for job in jobs]):
+        raise Exception("Not all jobs are completed.")
+    
+    # Get results
+    result_groups = [job.result() for job in jobs]
     
     return result_groups

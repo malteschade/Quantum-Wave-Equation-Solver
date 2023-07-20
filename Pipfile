@@ -5,15 +5,14 @@ name = "pypi"
 
 [packages]
 numpy = "*"
-pandas = "*"
 scipy = "*"
 matplotlib = "*"
 plotly = "*"
 qiskit = "*"
-qiskit-experiments = "*"
-qiskit-ibm-provider = "*"
 qiskit-aer = "*"
 qiskit-ibm-runtime = "*"
+pylatexenc = "*"
+pandas = "*"
 
 [dev-packages]
 

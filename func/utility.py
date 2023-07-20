@@ -84,6 +84,6 @@ def process_results(state0, batchdata, psi_norm, norm, INV_T, steps):
 
 def plot_results(data, times, label=''):
     # Plot results
-    fig = px.line(x=times, y=data,
-        title=f'Wave Field Simulation ({label})', labels={'value':'Value', 'variable':'Quantities', 't':'Time [s]'})
+    fig = px.line(x=times, y=[col for col in data.T],
+        title=f'Wave Field Simulation ({label})')
     return fig.show()

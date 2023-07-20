@@ -1,15 +1,16 @@
 {
-    "new_simulation" : true,
-    "prev_simulation_ids" : [],
+    "simID" : "20230720T114924",
     "nodes" : 2,
     "m" : [1,1],
-    "k" : [3,2],
+    "k" : [3,2,2],
     "node_pos" : [4,0],
     "node_vel" : [0,-3],
     "dt" : 0.25,
-    "steps": 20,
-    "hardware" : "simulator",
-    "model" : "perth",
+    "steps": 2,
+    "hardware" : "ibmq",
+    "model" : "qasm_simulator",
     "shots" : 10000,
-    "optimization" : 3
-}
+    "seed" : 0,
+    "optimization" : 3,
+    "resilience" : 1
+}   
