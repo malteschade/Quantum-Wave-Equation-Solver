@@ -61,15 +61,15 @@ def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
     # Determine number of necessary qubits
     num_qubits = int(np.log2(hamiltonian.shape[0]))
     
-    # Determine state tomography bases
-    bases = list(product("ZXY", repeat=num_qubits))
+    # Determine state tomography observables 
+    observables = list(product("ZXY", repeat=num_qubits))
 
 
     # Prepare circuits
     circuit_groups = []
     for time in times:
         circuits = []
-        for base in bases:
+        for observable in observables:
             # Circuit definition
             qr = QuantumRegister(num_qubits)
             cr = ClassicalRegister(num_qubits)
@@ -84,7 +84,7 @@ def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
             qc.barrier()
             
             # State Tomography Circuits
-            for i, op in enumerate(base):
+            for i, op in enumerate(observable):
                 qc.append(meas_circuits[op], [i])
             qc.barrier()
             
@@ -178,7 +178,7 @@ def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
     else:
         raise Exception("Invalid hardware selection.")
     
-    return result_groups
+    return result_groups, observables
 
 
 def load_job_ids(job_ids):

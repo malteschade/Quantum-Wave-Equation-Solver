@@ -55,33 +55,6 @@ def prepare_state(state0, T):
     return psi0, norm
 
 
-def process_results(state0, batchdata, psi_norm, norm, INV_T, steps):
-    # Analyze results
-    states = np.zeros((steps, len(state0)))
-    states[0], ref_state = state0, state0
-    for i, experiment in enumerate(batchdata.child_data()):
-        # Density matrix to Statevector conversion
-        stdata = experiment.block_for_results()
-        state_result = stdata.analysis_results('state')
-        rho = state_result.value.data
-        values, vectors = np.linalg.eig(rho)
-        psi_norm_2 = vectors[:, np.argmax(values)]
-        
-        # Minimize phase difference with parallel transport (psi)
-        phase = np.imag(np.log(psi_norm_2.dot(np.conj(psi_norm))))
-        psi_2 = np.exp(-1j * phase) * psi_norm_2 * norm
-        
-        # Append state to states
-        state = np.real(INV_T @ psi_2)
-
-        # Minimize phase difference with parallel transport (state)
-        phase = np.imag(np.log(state.dot(np.conj(ref_state))))
-        ref_state = np.exp(-1j * phase) * state
-        states[i+1] = ref_state
-    
-    return states
-
-
 def plot_results(data, times, label=''):
     # Plot results
     fig = px.line(x=times, y=[col for col in data.T],

@@ -18,9 +18,10 @@ import pickle
 import numpy as np
 
 # own modules
-from func.utility import hamiltonian, prepare_state, process_results, plot_results
+from func.utility import hamiltonian, prepare_state, plot_results
 from func.simulation_classical import simulate_classical
 from func.simulation_quantum import simulate_quantum, load_job_ids
+from func.tomography import run_tomography
 
 
 __author__ = '{author}'
@@ -75,7 +76,7 @@ def main():
         
         # Prepare initial state
         state0 = s['node_pos'] + s['node_vel']
-        psi0, norm = prepare_state(state0, T)
+        psi0, norm0 = prepare_state(state0, T)
         
         # Define time steps
         dt, steps = s['dt'], s['steps']
@@ -86,15 +87,16 @@ def main():
         np.savetxt(os.path.join(path_save, simID, 'sim_classical.csv'), states_cl, delimiter=",")
         
         # Save metadata
-        metadata = {"times" : times.tolist(), "state0" : state0, "psi0" : psi0.tolist(), "norm" : norm,
+        metadata = {"times" : times.tolist(), "state0" : state0, "psi0" : psi0.tolist(), "norm0" : norm0,
                     "H" : H.tolist(), "T" : T.tolist(), "INV_T" : INV_T.tolist(), "DV" : DV.tolist()}
         pickle.dump(metadata, open(os.path.join(path_save, simID, 'metadata.pkl'), 'wb'))
         
         # Simulate quantum
         job_id_path = os.path.join(path_save, simID, 'job_ids.json')
-        result_groups = simulate_quantum(psi0, H, times, s['hardware'], s['model'], s['shots'],
+        measurements, observables = simulate_quantum(psi0, H, times, s['hardware'], s['model'], s['shots'],
                                         s['optimization'], s['resilience'], s['seed'], save_path=job_id_path)
-        pickle.dump(result_groups, open(os.path.join(path_save, simID, 'measurements.pkl'), 'wb'))
+        pickle.dump(measurements, open(os.path.join(path_save, simID, 'measurements.pkl'), 'wb'))
+        json.dump(observables, open(os.path.join(path_save, simID, 'observables.json'), 'w'))
         print('New simulation finished.')
     
     
@@ -106,28 +108,29 @@ def main():
         
         if os.path.exists(os.path.join(path_save, s["simID"], 'measurements.pkl')):
             print("Reading measurements from file.")
-            result_groups = pickle.load(open(os.path.join(path_save, s["simID"], 'measurements.pkl'), 'rb'))
+            measurements = pickle.load(open(os.path.join(path_save, s["simID"], 'measurements.pkl'), 'rb'))
         
         elif os.path.exists(os.path.join(path_save, s["simID"], 'job_ids.json')):
             print("Loading measurements from IBMQ.")
             job_id_path = os.path.join(path_save, s["simID"], 'job_ids.json')
             job_ids = json.load(open(job_id_path, 'r'))
-            result_groups = load_job_ids(job_ids)
-            pickle.dump(result_groups, open(os.path.join(path_save, s["simID"], 'measurements.pkl'), 'wb'))
-            
-        else:
-            raise ValueError('Experiment folder corrupted.')
+            measurements = load_job_ids(job_ids)
+            pickle.dump(measurements, open(os.path.join(path_save, s["simID"], 'measurements.pkl'), 'wb'))
         print('Existing simulation loaded.')
         
         # Load variables
         metadata = pickle.load(open(os.path.join(path_save, s["simID"], 'metadata.pkl'), 'rb'))
-        s = json.load(open(os.path.join(path_save, s["simID"], 'settings.json'), 'r'))
+        times = metadata["times"]
         states_cl = np.loadtxt(os.path.join(path_save, s["simID"], 'sim_classical.csv'), delimiter=",")
+        observables = json.load(open(os.path.join(path_save, s["simID"], 'bases.json'), 'r'))
+        
     
-    # Process results
+    # Process quantum results
+    states_qc = run_tomography(measurements, observables, state0, psi0, norm0, INV_T)
+    
     
     # Plot results
-    #plot_results(states_cl, times, 'classical')
+    plot_results(states_cl, times, 'classical')
     
     
     
