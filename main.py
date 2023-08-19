@@ -32,6 +32,12 @@ __status__ = '{IN DEVELOPMENT}'
 # -------- CONFIGURATION --------
 path_settings = 'settings.json'
 path_save = 'data'
+log_name = 'log.log'
+meta_name = 'metadata.pkl'
+simcl_name = 'sim_classical.csv'
+jobid_name = 'job_ids.json'
+obs_name = 'observables.json'
+meas_name = 'measurements.pkl'
 
 
 # -------- MAIN --------
@@ -55,12 +61,12 @@ def main():
         os.makedirs(os.path.join(path_save, simID), exist_ok=True)
 
         # Save settings and log
-        json.dump(s, open(os.path.join(path_save, simID, 'settings.json'), 'w'))
+        json.dump(s, open(os.path.join(path_save, simID, path_settings), 'w'))
 
         # Setup logging
         log_format = '%(asctime)s - %(levelname)s - %(message)s'
         logging.basicConfig(
-            filename=os.path.join(path_save, simID, 'log.log'),
+            filename=os.path.join(path_save, simID, log_name),
             encoding='utf-8',
             level=logging.INFO,
             format=log_format,
@@ -82,7 +88,7 @@ def main():
         # Simulate classical ODE
         print('Simulating classical...')
         states_cl = simulate_classical(state0, times, DV)
-        np.savetxt(os.path.join(path_save, simID, 'sim_classical.csv'), states_cl, delimiter=",")
+        np.savetxt(os.path.join(path_save, simID, simcl_name), states_cl, delimiter=",")
 
         print('Classical simulation finished.')
 
@@ -98,14 +104,14 @@ def main():
             "INV_T" : INV_T.tolist(),
             "DV" : DV.tolist()
         }
-        pickle.dump(metadata, open(os.path.join(path_save, simID, 'metadata.pkl'), 'wb'))
+        pickle.dump(metadata, open(os.path.join(path_save, simID, meta_name), 'wb'))
 
         # Simulate quantum
         print('Simulating quantum...')
 
         # Define job ID path and observables path
-        job_id_path = os.path.join(path_save, simID, 'job_ids.json')
-        obs_path = os.path.join(path_save, simID, 'observables.json')
+        job_id_path = os.path.join(path_save, simID, jobid_name)
+        obs_path = os.path.join(path_save, simID, obs_name)
         
         # Simulate quantum Hamiltonian time evolution
         measurements, observables = simulate_quantum(
@@ -123,7 +129,7 @@ def main():
         )
 
         # Save measurements
-        pickle.dump(measurements, open(os.path.join(path_save, simID, 'measurements.pkl'), 'wb')) 
+        pickle.dump(measurements, open(os.path.join(path_save, simID, meas_name), 'wb')) 
 
         print('Quantum simulation finished.')
 
@@ -136,29 +142,29 @@ def main():
             raise ValueError(f'Simulation ID does not exist.')
         
         # Load measurements
-        if os.path.exists(os.path.join(path_save, s["simID"], 'measurements.pkl')):
+        if os.path.exists(os.path.join(path_save, s["simID"],meas_name)):
             print("Reading measurements from file.")
-            measurements = pickle.load(open(os.path.join(path_save, s["simID"], 'measurements.pkl'), 'rb'))
+            measurements = pickle.load(open(os.path.join(path_save, s["simID"], meas_name), 'rb'))
         
         # Load measurements from IBMQ
-        elif os.path.exists(os.path.join(path_save, s["simID"], 'job_ids.json')):
+        elif os.path.exists(os.path.join(path_save, s["simID"], jobid_name)):
             print("Loading measurements from IBMQ.")
-            job_id_path = os.path.join(path_save, s["simID"], 'job_ids.json')
+            job_id_path = os.path.join(path_save, s["simID"], jobid_name)
             job_ids = json.load(open(job_id_path, 'r'))
             measurements = load_job_ids(job_ids)
-            pickle.dump(measurements, open(os.path.join(path_save, s["simID"], 'measurements.pkl'), 'wb'))
+            pickle.dump(measurements, open(os.path.join(path_save, s["simID"], meas_name), 'wb'))
 
         print('Existing simulation loaded.')
         
         # Load variables
-        metadata = pickle.load(open(os.path.join(path_save, s["simID"], 'metadata.pkl'), 'rb'))
+        metadata = pickle.load(open(os.path.join(path_save, s["simID"], meta_name), 'rb'))
         times = metadata["times"]
         state0 = metadata["state0"]
         psi0 = np.array(metadata["psi0"])
         norm0 = metadata["norm0"]
         INV_T = np.array(metadata["INV_T"])
-        states_cl = np.loadtxt(os.path.join(path_save, s["simID"], 'sim_classical.csv'), delimiter=",")
-        observables = json.load(open(os.path.join(path_save, s["simID"], 'observables.json'), 'r'))
+        states_cl = np.loadtxt(os.path.join(path_save, s["simID"], simcl_name), delimiter=",")
+        observables = json.load(open(os.path.join(path_save, s["simID"], obs_name), 'r'))
         
     # Process quantum results
     states_qc = run_tomography(measurements, observables, state0, psi0, norm0, INV_T)
