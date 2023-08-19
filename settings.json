@@ -1,16 +1,15 @@
 {
     "simID" : "",
-    "nodes" : 2,
-    "m" : [1,1],
-    "k" : [3,2,2],
-    "node_pos" : [4,0],
-    "node_vel" : [0,-3],
-    "dt" : 0.25,
-    "steps": 20,
-    "hardware" : "ibmq",
-    "model" : "perth",
+    "m" : [1,1,1,1],
+    "k" : [1,2,1,2,1],
+    "node_pos" : [1,0,0,0],
+    "node_vel" : [0,0,0,0],
+    "dt" : 0.1,
+    "steps": 50,
+    "hardware" : "simulator",
+    "model" : "",
     "shots" : 10000,
     "seed" : 0,
     "optimization" : 3,
-    "resilience" : 1
+    "resilience" : 2
 }   

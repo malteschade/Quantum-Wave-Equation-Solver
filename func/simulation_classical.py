@@ -2,24 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
-{License_info}
+{Forward Simulation of the 1D wave equation on quantum hardware.}
 """
 
-# built-in modules
-
-# other modules
-import numpy as np
+# Other modules
 from scipy.integrate import odeint
 
-__author__ = '{author}'
-__copyright__ = 'Copyright {year}, {project_name}'
-__credits__ = ['{credit_list}']
-__license__ = '{license}'
-__version__ = '{mayor}.{minor}.{rel}'
-__maintainer__ = '{maintainer}'
-__email__ = '{contact_email}'
-__status__ = '{dev_status}'
+__author__ = '{Malte Leander Schade}'
+__copyright__ = 'Copyright {2023}, {quantum_wave_simulation}'
+__version__ = '{1}.{0}.{3}'
+__maintainer__ = '{Malte Leander Schade}'
+__email__ = '{mail@malteschade.com}'
+__status__ = '{IN DEVELOPMENT}'
 
 
 def simulate_classical(state0, times, DV):

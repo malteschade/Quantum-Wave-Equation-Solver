@@ -15,6 +15,7 @@ pylatexenc = "*"
 pandas = "*"
 qiskit-experiments = "*"
 pyyaml = "*"
+cvxpy = "*"
 
 [dev-packages]
 
