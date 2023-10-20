@@ -16,7 +16,7 @@ import pickle
 import numpy as np
 
 # Own modules
-from func.utility import hamiltonian, prepare_state, plot_results
+from func.utility import hamiltonian, prepare_state, hamiltonian_large, plot_multisub
 from func.simulation_classical import simulate_classical
 from func.simulation_quantum import simulate_quantum, load_job_ids, run_tomography
 
@@ -48,10 +48,10 @@ def main():
     # Start new simulation
     if s["simID"] == "":
         # Check settings
-        if not (len(s['m']) == len(s['node_pos']) == len(s['node_vel'])) > 0:
-            raise ValueError('Initial parameters not valid.')
-        if len(s['k']) != len(s['m'])+1:
-            raise ValueError('Initial parameters not valid.')
+        # if not (len(s['m']) == len(s['node_pos']) == len(s['node_vel'])) > 0:
+        #     raise ValueError('Initial parameters not valid.')
+        # if len(s['k']) != len(s['m'])+1:
+        #     raise ValueError('Initial parameters not valid.')
     
         # Set up simulation ID location
         dt = datetime.datetime.now()
@@ -74,12 +74,35 @@ def main():
         )
         logging.getLogger('qiskit_ibm_experiment').setLevel(logging.WARNING)
 
-        # Calculate Hamiltonian and dependent matrices
-        H, T, INV_T, DV = hamiltonian(np.array(s['m']), np.array(s['k']))
-
-        # Prepare initial state
-        state0 = s['node_pos'] + s['node_vel']
-        psi0, norm0 = prepare_state(state0, T)
+        if s['large_sim'] == True:
+            # Calculate Hamiltonian and dependent matrices
+            H, T, INV_T, DV = hamiltonian_large(s['m_l'], s['m_v'], s['k_l'], s['k_v'])
+            
+            # Define initial conditions
+            if s['initial'] == "start_pos_spike":
+                state0 = np.concatenate([np.array([1]), np.full(2*s['m_l']-1, 0)])
+                psi0, norm0 = prepare_state(state0, T)
+            
+            
+        elif s['large_sim'] == False:
+            # Calculate Hamiltonian and dependent matrices
+            H, T, INV_T, DV = hamiltonian(np.array(s['m']), np.array(s['k']))
+            
+            # Prepare initial state
+            #state0 = s['node_pos'] + s['node_vel']
+            
+            # Ricker wavelet
+            # n = len(s['node_pos'])
+            # f = 20
+            # rdt = 0.02
+            # t = np.arange(0, n) * rdt - (n * rdt) / 2.0  # Centering the wavelet
+            # wavelet = (1 - 2 * np.pi**2 * f**2 * t**2) * np.exp(-np.pi**2 * f**2 * t**2)
+            # state0 = wavelet.tolist() + s['node_vel']
+            
+            # Spike wavelet
+            state0 = np.concatenate([np.array([1]), np.full(len(s['node_pos'])*2-1, 0)])
+            
+            psi0, norm0 = prepare_state(state0, T)
 
         # Define time steps
         dt, steps = s['dt'], s['steps']
@@ -170,10 +193,8 @@ def main():
     states_qc = run_tomography(measurements, observables, state0, psi0, norm0, INV_T)
 
     # Plot results
-    r_y = np.max(np.abs(states_cl))*1.05
-    plot_results(states_cl, times, [-r_y, r_y], 'classical')
-    plot_results(states_qc, times, [-r_y, r_y], 'quantum')
-    plot_results((states_cl-states_qc)/np.max(states_cl), times, [-1, 1], 'relative difference')
+    time_idx = [0, 20, 40, 60, 80]
+    plot_multisub(states_qc, states_cl, time_idx, len(times))
     print(f'Mean Absolute Error: {np.mean(np.abs(states_cl-states_qc))}')
     print(f'Mean Relative error: {np.mean(np.abs((states_cl-states_qc)/np.max(states_cl)))}')
 

@@ -6,6 +6,7 @@
 """
 
 # Built-in modules
+import warnings
 import json
 from time import sleep
 from itertools import product
@@ -14,12 +15,18 @@ from itertools import product
 import numpy as np
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.library import HGate, SdgGate
+from qiskit.compiler import transpile
 from qiskit_experiments.library.tomography.fitters import linear_inversion, cvxpy_linear_lstsq, cvxpy_gaussian_lstsq
 from qiskit_experiments.library.tomography.basis import PauliMeasurementBasis
 from qiskit_ibm_runtime import QiskitRuntimeService, Session, Sampler, Options
 from qiskit_aer.primitives import Sampler as AerSampler
 from qiskit_aer.noise import NoiseModel
-from qiskit.providers.fake_provider import FakePerth
+from qiskit.providers.fake_provider import FakeSherbrooke, FakePerth, FakeLagosV2, FakeNairobiV2
+
+from qiskit.synthesis import SuzukiTrotter, LieTrotter, QDrift, MatrixExponential
+from qiskit.circuit.library import PauliEvolutionGate
+from qiskit.quantum_info import Operator, SparsePauliOp
+
 
 __author__ = '{Malte Leander Schade}'
 __copyright__ = 'Copyright {2023}, {quantum_wave_simulation}'
@@ -43,13 +50,23 @@ def define_measurement_circuits():
 
 meas_circuits = define_measurement_circuits()
 
+# Filter runtime warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 
 # -------- MAIN --------
 def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
              optimization=1, resilience=1, seed=None, job_id_path=None, obs_path=None):
     
     num_qubits = int(np.log2(len(psi0)))
-    observables = list(product("ZXY", repeat=num_qubits)) # full observable basis
+    print(f"Number of qubits: {num_qubits}")
+    print(f"Number of observables: {2**num_qubits}")
+    print(f"Number of time steps: {len(times)}")
+    print(f"Number of shots: {shots}")
+    print(f"Number of circuits: {len(times) * 2**num_qubits}")
+    print(f"Number of circuit runs: {len(times) * 2**num_qubits * shots}")
+    
+    observables = list(product("ZX", repeat=num_qubits)) # Purely real output state!
     
     # Save observables
     json.dump(observables, open(obs_path, 'w'))
@@ -87,9 +104,10 @@ def run_tomography(measurements, observables, initial_state, initial_psi, norm0,
     states[0], ref_state = initial_state, initial_state
     
     for i, measurement in enumerate(measurements):
+        print(f"Tomography: {i+1}/{len(measurements)}")
         max_key = _get_max_key(measurement)
         _pad_with_zeros(measurement, max_key)
-
+        
         freq = _get_frequencies(measurement, max_key)
         outcome_data, shot_data = _prepare_tomography_data(measurement, freq)
 
@@ -113,38 +131,70 @@ def run_tomography(measurements, observables, initial_state, initial_psi, norm0,
 # -------- FUNCTIONS --------
 def _prepare_circuits(times, observables, psi0, hamiltonian, num_qubits):
     print(f"Preparing circuits ...")
+    
+    # Prepare basic circuit
+    basic_qc, basic_qr, basic_cr = _prepare_basic_circuit(num_qubits, psi0)
+    
     n = 0
     circuit_groups = []
-    for time in times:
+    for idx, time in enumerate(times):
+        time_qc = _prepare_time_circuit(basic_qc.copy(), basic_qr, hamiltonian, time)
+        
         circuits = []
         for observable in observables:
-            circuit = _prepare_single_circuit(num_qubits, psi0, hamiltonian, time, observable)
+            circuit = _prepare_single_circuit(time_qc.copy(), basic_qr, basic_cr, observable)
             circuits.append(circuit)
+            if n == 0:
+                print((f'Circuit depth (logical): {circuit.decompose(reps=20).depth()}'))
             n += 1
         circuit_groups.append(circuits)
-    print(f"{n} Circuits in {len(times)} jobs prepared ...")
+        print(f"Prepared time step {idx}/{len(times)}.")
+    print(f"{n} Circuits in {len(times)} jobs prepared.")
     return circuit_groups
 
-def _prepare_single_circuit(num_qubits, psi0, hamiltonian, time, observable):
+def _prepare_basic_circuit(num_qubits, psi0):
     qr = QuantumRegister(num_qubits)
     cr = ClassicalRegister(num_qubits)
     qc = QuantumCircuit(qr, cr)
+    
     # Statevector preparation
-    qc.prepare_state(psi0, qr)
-    qc.barrier()
-    # Time evolution
-    qc.hamiltonian(operator=hamiltonian, time=time, qubits=list(qr))
-    qc.barrier()
+    # Outcomment: Spike wavelet
+    qc.prepare_state(psi0, qr) # UNKNOWN: Whats the implementation?
+    
+    return qc, qr, cr
+
+def _prepare_time_circuit(basic_qc, basic_qr, hamiltonian, time):
+    # Matrix exponential evolution (dense!)
+    #basic_qc.hamiltonian(operator=hamiltonian, time=time, qubits=list(basic_qr)) # UNKNOWN: Whats the implementation? Matrix exponential.
+    
+    # Hamiltonian time evolution
+    synthesis = MatrixExponential()
+    #synthesis = LieTrotter(reps=3)
+    #synthesis = SuzukiTrotter(order=2, reps=2)
+    #synthesis = QDrift(reps=4)
+    op = SparsePauliOp.from_operator(Operator(hamiltonian)) # Inefficient Imlementation! But: Analytical solution known!
+    evo = PauliEvolutionGate(op, time=time, synthesis=synthesis)
+    basic_qc.append(evo.definition, basic_qr)
+    basic_qc.barrier()
+    
+    return basic_qc
+
+def _prepare_single_circuit(time_qc, basic_qr, basic_cr, observable):
     # State Tomography Circuits
     for i, op in enumerate(observable):
-        qc.append(meas_circuits[op], [i])
-    qc.barrier()
+        time_qc.append(meas_circuits[op], [i])
+    time_qc.barrier()
+    
     # Measurement
-    qc.measure(qr, cr)
-    return qc
+    time_qc.measure(basic_qr, basic_cr)
+    return time_qc
 
-def _run_simulator(circuit_groups, model, seed, shots):
-    sampler = _get_simulator_sampler(model, seed, shots)
+def _run_simulator(circuit_groups, model, seed, shots): # -> Paramterized circuits for change of t and observables
+    sampler, backend = _get_simulator_sampler(model, seed, shots)
+    print('Transpiling circuit')
+    tr = transpile(circuit_groups[0][0], optimization_level=3, backend=backend)
+    print(f'Circuit depth (actual): {tr.depth()}')
+    
     print(f"Running circuits ...")
     jobs = [sampler.run(circuits) for circuits in circuit_groups]
     _wait_for_jobs_to_complete(jobs)
@@ -176,9 +226,51 @@ def _get_simulator_sampler(model, seed, shots):
             run_options={"seed": seed, "shots": shots},
             transpile_options={"seed_transpiler": seed},
         )
+    elif model == "sherbrooke":
+        backend = FakeSherbrooke()
+        coupling_map = backend.coupling_map
+        noise_model = NoiseModel.from_backend(backend)
+        sampler = AerSampler(
+            backend_options={
+                "method": "density_matrix",
+                "coupling_map": coupling_map,
+                "noise_model": noise_model,
+                "max_parallel_experiments": 0
+            },
+            run_options={"seed": seed, "shots": shots},
+            transpile_options={"seed_transpiler": seed},
+        )
+    elif model == "lagos":
+        backend = FakeLagosV2()
+        coupling_map = backend.coupling_map
+        noise_model = NoiseModel.from_backend(backend)
+        sampler = AerSampler(
+            backend_options={
+                "method": "density_matrix",
+                "coupling_map": coupling_map,
+                "noise_model": noise_model,
+                "max_parallel_experiments": 0
+            },
+            run_options={"seed": seed, "shots": shots},
+            transpile_options={"seed_transpiler": seed},
+        )
+    elif model == "nairobi":
+        backend = FakeNairobiV2()
+        coupling_map = backend.coupling_map
+        noise_model = NoiseModel.from_backend(backend)
+        sampler = AerSampler(
+            backend_options={
+                "method": "density_matrix",
+                "coupling_map": coupling_map,
+                "noise_model": noise_model,
+                "max_parallel_experiments": 0
+            },
+            run_options={"seed": seed, "shots": shots},
+            transpile_options={"seed_transpiler": seed},
+        )
     else:
         raise Exception("Invalid model selection for local simulation.")
-    return sampler
+    return sampler, backend
 
 def _run_ibmq(circuit_groups, model, optimization, resilience, shots, job_id_path):
     service = QiskitRuntimeService()
@@ -215,8 +307,8 @@ def _get_ibmq_backend(service, model):
         backend = service.backend("ibmq_qasm_simulator")
     elif model == "perth":
         backend = service.backend("ibm_perth")
-    elif model == "belem":
-        backend = service.backend("ibmq_belem")
+    elif model == "quito":
+        backend = service.backend("ibmq_quito")
     else:
         raise Exception("Invalid model selection for cloud simulation.")
     return backend
