@@ -193,11 +193,8 @@ def main():
     states_qc = run_tomography(measurements, observables, state0, psi0, norm0, INV_T)
 
     # Plot results
-    time_idx = [0, 4, 8, 12, 16]
+    time_idx = [0, 2, 7, 12, 15]
     plot_multisub(states_qc, states_cl, time_idx, len(times))
-    print(f'Mean Absolute Error: {np.mean(np.abs(states_cl-states_qc))}')
-    print(f'Mean Relative error: {np.mean(np.abs((states_cl-states_qc)/np.max(states_cl)))}')
-
 
 if __name__ == '__main__':
     main()

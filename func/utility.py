@@ -85,17 +85,31 @@ def raised_cosine(x, c=0, s=1):
 
 def hamiltonian(m, k):
     #k = gaussian_blob(k, mu=5, sigma=1.1, c=1, s=10)
-    #k = np.linspace(-1, 1, 33)
-    #k = raised_cosine(k, 5, 5)
-    #k = [1000] * int((len(k)-1)/2) + [500] * int((len(k)-1)/2) + [0]
-    k = (np.linspace(1, 2, len(k)) * 500).tolist()
+    
+    # Raised Cosine (Partial domain)
+    k1 = np.linspace(-0.9, 0, int((len(k)-1)/2)+2)
+    k1 = raised_cosine(k1, 2e10, 1e10) 
+    k2 = [2e10]*(int((len(k)-1)/2)-2)
+    k = np.concatenate([k2, k1, [0]])
     print(k)
-     
+    
+    m1 = np.linspace(-0.9, 0, int(len(m)/2)+2)
+    m1 = raised_cosine(m1, 2000, 1000) 
+    m2 = [2000]*(int(len(m)/2)-2) 
+    m = np.concatenate([m2, m1])
+    print(m)
+    
+    #k = k[::-1]
+    
+    #k = [1000] * int((len(k)-1)/2) + [500] * int((len(k)-1)/2) + [0] # Step Function
+    #k = (np.linspace(1, 2, len(k)) * 500).tolist() # Linear Increase
+    
     # Calculate operator D
-    MU = np.diag(k[:-1])
-    mu = k[:-1]
-    
-    
+    dx = 1 # space sampling
+    SQRT_M = np.diag(1/np.sqrt(m))
+    MU = (1/dx**2)*SQRT_M@np.diag(k[:-1])@SQRT_M
+    mu = MU.diagonal()
+
     # Finite difference
     FD1 = (
         np.diag([-1/2]*(len(k)-2), k=-1) + 
@@ -168,8 +182,13 @@ def hamiltonian_large(m_l, m_v, k_l, k_v):
     k = np.full(k_l, k_v)
     
     # Calculate operator D
-    MU = np.diag(k[:-1])
-    mu = k[:-1] 
+    M = np.diag(m)
+    SQRT_M = np.diag(np.sqrt(m))
+    MU = SQRT_M@np.diag(k[:-1])@SQRT_M
+    mu = SQRT_M*k[:-1]*SQRT_M
+    print(mu)
+    print(MU)
+    raise Exception
     
     # Finite difference
     FD1 = (
@@ -226,6 +245,8 @@ def prepare_state(state0, T):
 
 
 def plot_multisub(data, data2, specific_time_indices, time):
+    dt = 0.0002
+    
     midpoint = data.shape[1] // 2
     data = data[:, :midpoint]
     data2 = data2[:, :midpoint]
@@ -240,7 +261,7 @@ def plot_multisub(data, data2, specific_time_indices, time):
     l2_errors = np.linalg.norm(data - data2, axis=1) / np.linalg.norm(data2, axis=1)
     
     fig = make_subplots(rows=2, cols=3,
-                        subplot_titles=[f"t={idx/time:.4f}*T" for idx in specific_time_indices] + [f'Error (E={l2_errors.mean():.4f})'])
+                        subplot_titles=[f"$$t={idx*dt:.4f}s$$" for idx in specific_time_indices] + [f"$$Error:\;\overline E  ={l2_errors.mean():.4f} $$"])
     
     for plot_idx, time_idx in enumerate(specific_time_indices):
         show_legend = plot_idx == 0
@@ -259,19 +280,27 @@ def plot_multisub(data, data2, specific_time_indices, time):
                                  marker=dict(color='red'),
                                  showlegend=show_legend),
                       row=plot_idx//3 + 1, col=plot_idx%3 + 1)
-        tickvals = np.array([0, 0.25, 0.5, 0.75, 1]) * (len(data[time_idx])+1)
-        ticklabels = ['-0.5', '-0.25', '0', '0.25', '0.5']
-        fig.update_xaxes(title_text="X", row=plot_idx//3 + 1, col=plot_idx%3 + 1, tickvals=tickvals, ticktext=ticklabels)
-        fig.update_yaxes(title_text="Amplitude", row=plot_idx//3 + 1, col=plot_idx%3 + 1)
+        #tickvals = np.array([0, 0.25, 0.5, 0.75, 1]) * (len(data[time_idx])+1)
+        #ticklabels = ['-0.5', '-0.25', '0', '0.25', '0.5']
+        #fig.update_xaxes(title_text="X", row=plot_idx//3 + 1, col=plot_idx%3 + 1, tickvals=tickvals, ticktext=ticklabels)
+        fig.update_xaxes(title_text="$Distance [m]$", row=plot_idx//3 + 1, col=plot_idx%3 + 1)
+        fig.update_yaxes(title_text="$Amplitude [\mu m]$", row=plot_idx//3 + 1, col=plot_idx%3 + 1)
         
     fig.add_trace(go.Scatter(x=list(range(len(l2_errors))), y=l2_errors, mode='lines', name='L2 Norm', line=dict(color='black'), showlegend=False), row=2, col=3)
-    tickvals = np.array([0, 0.25, 0.5, 0.75, 1]) * len(data)
-    ticklabels = ['0', '0.25', '0.5', '0.75', '1']
-    fig.update_xaxes(title_text="T", tickvals=tickvals, ticktext=ticklabels, row=2, col=3)
-    fig.update_yaxes(title_text="$log_{10}(||u^q - u^c|| / ||u^c||)$", type='log', row=2, col=3)
+    tickvals = np.array([0, 5, 10, 15])
+    ticklabels = [f'{idx*dt:.3f}' for idx in tickvals]
+    fig.update_xaxes(title_text="$Time [s]$", tickvals=tickvals, ticktext=ticklabels, row=2, col=3)
+    #fig.update_yaxes(title_text="$log_{10}(||u^q - u^c|| / ||u^c||)$", type='log', row=2, col=3)
+    fig.update_yaxes(title_text="$||u^q - u^c|| / ||u^c||$", row=2, col=3)
     
     fig.update_yaxes(range=[-1, 1])
-    fig.update_yaxes(row=2, col=3, range=[-6, 1])
+    #fig.update_yaxes(row=2, col=3, range=[-3, 1])
+    fig.update_yaxes(row=2, col=3, range=[0, 3])
+    
+    fig.update_layout(font=dict(size=15))
+    for annotation in fig['layout']['annotations']:
+        annotation['font'] = dict(size=20)
+        annotation['yshift'] = 10
     
     fig.write_image("forward_sim.png", scale=4, width=1400, height=800)
     return fig.show()
