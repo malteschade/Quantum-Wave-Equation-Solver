@@ -10,12 +10,12 @@
     "k" : [1,1,1,1,1,1,1,1,1],
     "node_pos" : [0,0,0,0,0,0,0,0],
     "node_vel" : [0,0,0,0,0,0,0,0],
-    "dt" : 0.001,
-    "steps": 100,
+    "dt" : 0.015,
+    "steps": 18,
     "hardware" : "simulator",
-    "model" : "lagos",
-    "shots" : 100000,
+    "model" : "",
+    "shots" : 10000,
     "seed" : 0,
     "optimization" : 3,
-    "resilience" : 3
+    "resilience" : 1
 }

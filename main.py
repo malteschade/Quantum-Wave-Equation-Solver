@@ -93,9 +93,9 @@ def main():
             
             # Ricker wavelet
             # n = len(s['node_pos'])
-            # f = 20
+            # f = 15
             # rdt = 0.02
-            # t = np.arange(0, n) * rdt - (n * rdt) / 2.0  # Centering the wavelet
+            # t = np.arange(0, n) * rdt - ((n * rdt) / 2.0)  # Centering the wavelet
             # wavelet = (1 - 2 * np.pi**2 * f**2 * t**2) * np.exp(-np.pi**2 * f**2 * t**2)
             # state0 = wavelet.tolist() + s['node_vel']
             
@@ -193,7 +193,7 @@ def main():
     states_qc = run_tomography(measurements, observables, state0, psi0, norm0, INV_T)
 
     # Plot results
-    time_idx = [0, 20, 40, 60, 80]
+    time_idx = [0, 4, 8, 12, 16]
     plot_multisub(states_qc, states_cl, time_idx, len(times))
     print(f'Mean Absolute Error: {np.mean(np.abs(states_cl-states_qc))}')
     print(f'Mean Relative error: {np.mean(np.abs((states_cl-states_qc)/np.max(states_cl)))}')

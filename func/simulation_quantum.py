@@ -21,7 +21,7 @@ from qiskit_experiments.library.tomography.basis import PauliMeasurementBasis
 from qiskit_ibm_runtime import QiskitRuntimeService, Session, Sampler, Options
 from qiskit_aer.primitives import Sampler as AerSampler
 from qiskit_aer.noise import NoiseModel
-from qiskit.providers.fake_provider import FakeSherbrooke, FakePerth, FakeLagosV2, FakeNairobiV2
+from qiskit.providers.fake_provider import FakeSherbrooke, FakePerth, FakeLagosV2, FakeNairobiV2, FakeGuadalupeV2
 
 from qiskit.synthesis import SuzukiTrotter, LieTrotter, QDrift, MatrixExponential
 from qiskit.circuit.library import PauliEvolutionGate
@@ -56,7 +56,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # -------- MAIN --------
 def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
-             optimization=1, resilience=1, seed=None, job_id_path=None, obs_path=None):
+             optimization=1, resilience=1, seed=None, job_id_path=None, obs_path=None, block_size=100):
     
     num_qubits = int(np.log2(len(psi0)))
     print(f"Number of qubits: {num_qubits}")
@@ -71,7 +71,7 @@ def simulate_quantum(psi0, hamiltonian, times, hardware, model="", shots=1000,
     # Save observables
     json.dump(observables, open(obs_path, 'w'))
 
-    circuit_groups = _prepare_circuits(times, observables, psi0, hamiltonian, num_qubits)
+    circuit_groups = _prepare_circuits(times, observables, psi0, hamiltonian, num_qubits, block_size)
 
     if hardware == "simulator":
         result_groups = _run_simulator(circuit_groups, model, seed, shots)
@@ -99,20 +99,26 @@ def load_job_ids(job_ids):
 
 def run_tomography(measurements, observables, initial_state, initial_psi, norm0, INV_T):
     print("Running tomography...")
-    
-    states = np.zeros((len(measurements)+1, len(initial_state)))
+
+    measurements = [m for measurement in measurements for m in measurement.decompose()]
+    quasi_dist = [m.quasi_dists[0] for m in measurements]
+    n_obs = len(observables)
+    n_steps = int(len(measurements)/n_obs)
+
+    states = np.zeros((n_steps+1, len(initial_state)))
     states[0], ref_state = initial_state, initial_state
     
-    for i, measurement in enumerate(measurements):
-        print(f"Tomography: {i+1}/{len(measurements)}")
-        max_key = _get_max_key(measurement)
-        _pad_with_zeros(measurement, max_key)
-        
-        freq = _get_frequencies(measurement, max_key)
-        outcome_data, shot_data = _prepare_tomography_data(measurement, freq)
+    max_key = _get_max_key(quasi_dist)
+    _pad_with_zeros(quasi_dist, max_key)
+    freq = _get_frequencies(quasi_dist, max_key)
+    shot_data = np.array([meta['shots'] for meta in measurements[0].metadata]*n_obs)
+    measurement_data = _get_measurement_data(observables)
+    preparation_data = np.full((len(shot_data), 0), None)
 
-        measurement_data = _get_measurement_data(observables)
-        preparation_data = np.full((len(shot_data), 0), None)
+    for i in range(n_steps):
+        print(f"Tomography: {i+1}/{n_steps}")
+        freq_step = freq[i*n_obs:(i+1)*n_obs]
+        outcome_data = np.expand_dims(freq_step * shot_data[:, np.newaxis], axis=0)
 
         rho = _run_inversion(measurement_data, outcome_data, shot_data, preparation_data)
         
@@ -129,7 +135,7 @@ def run_tomography(measurements, observables, initial_state, initial_psi, norm0,
 
 
 # -------- FUNCTIONS --------
-def _prepare_circuits(times, observables, psi0, hamiltonian, num_qubits):
+def _prepare_circuits(times, observables, psi0, hamiltonian, num_qubits, block_size):
     print(f"Preparing circuits ...")
     
     # Prepare basic circuit
@@ -137,19 +143,24 @@ def _prepare_circuits(times, observables, psi0, hamiltonian, num_qubits):
     
     n = 0
     circuit_groups = []
+    circuits = []
     for idx, time in enumerate(times):
         time_qc = _prepare_time_circuit(basic_qc.copy(), basic_qr, hamiltonian, time)
         
-        circuits = []
         for observable in observables:
             circuit = _prepare_single_circuit(time_qc.copy(), basic_qr, basic_cr, observable)
             circuits.append(circuit)
             if n == 0:
                 print((f'Circuit depth (logical): {circuit.decompose(reps=20).depth()}'))
+            if len(circuits) == block_size:
+                circuit_groups.append(circuits)
+                circuits = []
             n += 1
-        circuit_groups.append(circuits)
+                
         print(f"Prepared time step {idx}/{len(times)}.")
-    print(f"{n} Circuits in {len(times)} jobs prepared.")
+    circuit_groups.append(circuits)
+    
+    print(f"{n} Circuits in {len(circuit_groups)} jobs prepared with block size {block_size}.")
     return circuit_groups
 
 def _prepare_basic_circuit(num_qubits, psi0):
@@ -159,7 +170,7 @@ def _prepare_basic_circuit(num_qubits, psi0):
     
     # Statevector preparation
     # Outcomment: Spike wavelet
-    qc.prepare_state(psi0, qr) # UNKNOWN: Whats the implementation?
+    #qc.prepare_state(psi0, qr) # UNKNOWN: Whats the implementation?
     
     return qc, qr, cr
 
@@ -191,8 +202,15 @@ def _prepare_single_circuit(time_qc, basic_qr, basic_cr, observable):
 
 def _run_simulator(circuit_groups, model, seed, shots): # -> Paramterized circuits for change of t and observables
     sampler, backend = _get_simulator_sampler(model, seed, shots)
-    print('Transpiling circuit')
-    tr = transpile(circuit_groups[0][0], optimization_level=3, backend=backend)
+    print('Transpiling circuits')
+    tr = transpile(circuit_groups[0][0],
+                    backend=backend,
+                    seed_transpiler=seed,
+                    #layout_method="sabre",
+                    #routing_method="lookahead",
+                    #translation_method="unroller",
+                    #approximation_degree=0.8,
+                    optimization_level=3)
     print(f'Circuit depth (actual): {tr.depth()}')
     
     print(f"Running circuits ...")
@@ -266,6 +284,24 @@ def _get_simulator_sampler(model, seed, shots):
                 "max_parallel_experiments": 0
             },
             run_options={"seed": seed, "shots": shots},
+            transpile_options={"seed_transpiler": seed,
+                               #"approximation_degree": 0.8,
+                               "optimization_level": 3},
+        )
+    elif model == "guadalupe":
+        backend = FakeGuadalupeV2()
+        coupling_map = backend.coupling_map
+        noise_model = NoiseModel.from_backend(backend)
+        basis_gates = backend.basis_gates
+        
+        sampler = AerSampler(
+            backend_options={
+                "method": "density_matrix",
+                "coupling_map": coupling_map,
+                "noise_model": noise_model,
+                "max_parallel_experiments": 0
+            },
+            run_options={"seed": seed, "shots": shots},
             transpile_options={"seed_transpiler": seed},
         )
     else:
@@ -276,6 +312,16 @@ def _run_ibmq(circuit_groups, model, optimization, resilience, shots, job_id_pat
     service = QiskitRuntimeService()
     options = Options(optimization_level=optimization,
                       resilience_level=resilience)
+    
+    # TEST: Noise model
+    fake_backend = FakeNairobiV2()
+    noise_model = NoiseModel.from_backend(fake_backend)
+    options.simulator = {
+    "noise_model": noise_model,
+    "coupling_map": fake_backend.coupling_map,
+    "seed_simulator": 0
+    }
+    
     backend = _get_ibmq_backend(service, model)
     with Session(service=service, backend=backend) as session:
         sampler = Sampler(session=session, options=options)
@@ -291,7 +337,7 @@ def _run_ibmq(circuit_groups, model, optimization, resilience, shots, job_id_pat
                 except Exception as e:
                     print(e)
                     print('Retrying in 10 seconds ...')
-                    sleep(10)
+                    sleep(5)
             job_ids.append(job.job_id())
             jobs.append(job)
         # Save job IDs
@@ -303,12 +349,17 @@ def _run_ibmq(circuit_groups, model, optimization, resilience, shots, job_id_pat
     return result_groups
 
 def _get_ibmq_backend(service, model):
+    #print(service.backends())
     if model == "qasm_simulator":
         backend = service.backend("ibmq_qasm_simulator")
     elif model == "perth":
         backend = service.backend("ibm_perth")
-    elif model == "quito":
-        backend = service.backend("ibmq_quito")
+    elif model == "nairobi":
+        backend = service.backend("ibm_nairobi")
+    elif model == "lagos":
+        backend = service.backend("ibm_lagos")
+    elif model == "brisbane":
+        backend = service.backend("ibm_brisbane")
     else:
         raise Exception("Invalid model selection for cloud simulation.")
     return backend
@@ -320,26 +371,21 @@ def _wait_for_jobs_to_complete(jobs):
         print(f"Jobs completed: {sum(done_list)}/{len(done_list)}")
         if all(done_list):
             completed = True
-        sleep(10)
+        sleep(5)
 
 def _ensure_jobs_completed(jobs):
     if not all([job.status().name == "DONE" for job in jobs]):
         raise Exception("Not all jobs are completed.")
 
-def _get_max_key(measurement):
-    return max(max(dist.keys()) for dist in measurement.quasi_dists)
+def _get_max_key(quasi_dist):
+    return max(max(dist.keys()) for dist in quasi_dist)
 
-def _pad_with_zeros(measurement, max_key):
-    [dist.setdefault(i, 0) for dist in measurement.quasi_dists for i in range(max_key + 1)]
+def _pad_with_zeros(quasi_dist, max_key):
+    [dist.setdefault(i, 0) for dist in quasi_dist for i in range(max_key + 1)]
 
-def _get_frequencies(measurement, max_key):
-    freq = np.array([dist[key] for dist in measurement.quasi_dists for key in range(max_key + 1)])
-    return np.reshape(freq, (len(measurement.quasi_dists), max_key+1))
-
-def _prepare_tomography_data(measurement, freq):
-    shot_data = np.array([meta['shots'] for meta in measurement.metadata])
-    outcome_data = np.expand_dims(freq * shot_data[:, np.newaxis], axis=0)
-    return outcome_data, shot_data
+def _get_frequencies(quasi_dist, max_key):
+    freq = np.array([dist[key] for dist in quasi_dist for key in range(max_key + 1)])
+    return np.reshape(freq, (len(quasi_dist), max_key+1))
 
 def _get_measurement_data(observables):
     replacement = {'Z': 0, 'X': 1, 'Y': 2}

@@ -87,7 +87,8 @@ def hamiltonian(m, k):
     #k = gaussian_blob(k, mu=5, sigma=1.1, c=1, s=10)
     #k = np.linspace(-1, 1, 33)
     #k = raised_cosine(k, 5, 5)
-    k = [500] * len(k)
+    #k = [1000] * int((len(k)-1)/2) + [500] * int((len(k)-1)/2) + [0]
+    k = (np.linspace(1, 2, len(k)) * 500).tolist()
     print(k)
      
     # Calculate operator D
@@ -239,7 +240,7 @@ def plot_multisub(data, data2, specific_time_indices, time):
     l2_errors = np.linalg.norm(data - data2, axis=1) / np.linalg.norm(data2, axis=1)
     
     fig = make_subplots(rows=2, cols=3,
-                        subplot_titles=[f"t={idx/time}*T" for idx in specific_time_indices] + [f'Error (E={l2_errors.mean():.4f})'])
+                        subplot_titles=[f"t={idx/time:.4f}*T" for idx in specific_time_indices] + [f'Error (E={l2_errors.mean():.4f})'])
     
     for plot_idx, time_idx in enumerate(specific_time_indices):
         show_legend = plot_idx == 0
