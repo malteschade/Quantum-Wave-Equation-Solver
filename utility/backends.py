@@ -24,40 +24,35 @@ class BaseBackend:
     def __init__(self, **kwargs):
         self.sampler = self.init_sampler(**kwargs)
 
-    def init_options(self, backend, fake, method, seed, shots, 
-                     optimization, resilience, max_parallel_experiments):
+    def init_options(self, backend, fake, seed, shots, optimization, resilience):
         self.service = BackendService().service if backend else None
         self.backend = BackendService().backends.get(backend, None) if backend else None
         self.fake_backend = FAKE_PROVIDERS.get(fake, None)
         self.simulator_options = {
             "seed_simulator": seed,
-            "method": method if method else 'statevector',
             "coupling_map": self.fake_backend.coupling_map if self.fake_backend else None,
             "noise_model": NoiseModel.from_backend(self.fake_backend) if self.fake_backend else None,
-            "max_parallel_experiments": max_parallel_experiments
             }
-        self.transpile_options = {"seed_transpiler": seed}
-        self.run_options = {"seed": seed, "shots": shots}
+        self.transpile_options = {}
+        self.run_options = {"shots": shots}
         
         return Options(optimization_level=optimization, resilience_level=resilience, 
                         transpilation=self.transpile_options, execution=self.run_options,
                         simulator=self.simulator_options,)
 
 class CloudBackend(BaseBackend):
-    def __init__(self, backend=None, fake=None, method=None,
-                 max_parallel_experiments=0, seed=0, shots=10000, optimization=3, resilience=2):
-        self.options = self.init_options(backend, fake, method, seed, shots, 
-                                         optimization, resilience, max_parallel_experiments)
+    def __init__(self, backend='ibmq_qasm_simulator', fake=None, seed=0, shots=10000, optimization=3, resilience=1):
+        self.options = self.init_options(backend, fake, seed, shots, optimization, resilience)
         self.session = Session(service=self.service, backend=self.backend)
         self.sampler = Sampler(session=self.session, options=self.options)
     
 class LocalBackend(BaseBackend):
-    def __init__(self, fake=None, method=None,
-                 max_parallel_experiments=0, seed=0, shots=10000, optimization=3, resilience=2):
-        backend = None
-        self.options = self.init_options(backend, fake, method, seed, shots, 
-                                         optimization, resilience, max_parallel_experiments)
-        self.sampler = AerSampler(backend_options=self.options.simulator.__dict__,
+    def __init__(self, fake=None, method='statevector', max_parallel_experiments=0, 
+                 seed=0, shots=10000, optimization=3, resilience=1):
+        self.options = self.init_options(None, fake, seed, shots, optimization, resilience)
+        self.sampler = AerSampler(backend_options={**self.options.simulator.__dict__,
+                                                   **{'method': method,
+                                                      'max_parallel_experiments': max_parallel_experiments}},
                                   transpile_options={"seed_transpiler": seed},
                                   run_options=self.options.execution.__dict__)
 
@@ -68,4 +63,4 @@ def get_cloud_backends():
     return BackendService().backends.keys()
 
 def save_credentials(token):
-    QiskitRuntimeService.save_account(token, overwrite=True)
+    QiskitRuntimeService.save_account(token=token, channel='ibm_quantum', instance='ibm-q/open/main', overwrite=True)

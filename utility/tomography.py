@@ -5,7 +5,8 @@ from qiskit_experiments.library.tomography.fitters import (linear_inversion,
                                                            cvxpy_linear_lstsq, cvxpy_gaussian_lstsq)
 
 class TomographyReal:
-    def __init__(self, fitter='linear'):
+    def __init__(self, logger, fitter='linear'):
+        self.logger = logger
         self.fitter = fitter
 
     def run_tomography(self, result_groups, observables, times):
@@ -27,6 +28,7 @@ class TomographyReal:
 
         states = []
         for i in range(len(times)):
+            self.logger.info(f'Tomography step: {i+1} | {len(times)}.')
             freq_step = freq[i*len(observables):(i+1)*len(observables)]
             outcome_data = np.expand_dims(freq_step * shot_data[:, np.newaxis], axis=0)
             match self.fitter:
@@ -46,6 +48,8 @@ class TomographyReal:
                     rho, metadata = scipy_linear_lstsq(outcome_data, shot_data, measurement_data,
                                                     preparation_data, **fitter_kwargs)
             eigval, eigvec = np.linalg.eig(rho)
+            self.logger.debug(f'Eigenvalues: {eigval}')
+            self.logger.debug(f'Eigenvectors: {eigvec}')
             states.append(eigvec[:, np.argmax(eigval)])   
         return np.array(states)
 

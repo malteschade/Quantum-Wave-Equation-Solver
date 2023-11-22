@@ -11,19 +11,28 @@ from utility.circuits import CircuitGen1DA
 from utility.tomography import TomographyReal, parallel_transport
 
 class Solver1D:
-    def __init__(self, **kwargs):
+    def __init__(self, logger, **kwargs):
+        self.logger = logger
         self.kwargs = kwargs
         self.data = {'config': self.kwargs}
         
         # Check parameters
         self.check_kwargs()
+        self.logger.info(f'Parameters checked for validity.')
         
         # Set time steps
         self.set_times()
+        self.logger.info(f'Solving for {self.kwargs["nt"]} time steps.')
+        self.logger.debug(f'Times: {self.data["times"]}')
         
-        # Set transform and medium
+        # Set transform
+        self.logger.info(f'Calculating Transformation and Hamiltonian.')
         self.set_transform()
+        self.logger.info(f'Calculation completed.')
+        
+        # Set medium
         self.set_medium()
+        self.logger.info(f'Medium initialized.')
         
     def check_kwargs(self):
         assert self.kwargs['nx'] > 0, 'nx must be greater than zero'
@@ -70,93 +79,118 @@ class Solver1D:
         self.data['medium'] = self.md.get_dict()
 
 class Solver1DODE(Solver1D):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, logger, **kwargs):
+        super().__init__(logger, **kwargs)
         self.st = StateProcessor(self.kwargs['nx'], self.kwargs['nt'], shift=0)
         self.st.set_u(self.kwargs['u'], 0)
         self.st.set_v(self.kwargs['v'], 0)
         self.st.forward_state(0, self.tf.sqrt_m)
+        self.logger.info(f'Initial state forward-transformed.')
         
     def run(self):
+        self.logger.info(f'Solving ODE.')
         self.st.states = odeint(lambda y, t: self.tf.q @ y, self.st.get_state(0), self.times)
+        self.logger.info(f'ODE solved.')
         [self.st.inverse_state(i, self.tf.inv_sqrt_m) for i in range(len(self.times))]
+        self.logger.info(f'States inverse-transformed.')
+        
         self.data['field'] = self.st.get_dict()
         return self.data
 
 class Solver1DLocal(Solver1D):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, logger, **kwargs):
+        super().__init__(logger, **kwargs)
         self.st = StateProcessor(self.kwargs['nx'], self.kwargs['nt'], shift=1)
-        
-        # Checked
         self.st.set_u(self.kwargs['u'], 0)
         self.st.set_v(self.kwargs['v'], 0)
         self.st.forward_state(0, self.tf.t @ self.tf.sqrt_m)
+        self.logger.info(f'Initial state transformed.')
         
     def run(self):
-        # Checked
-        circuit_gen = CircuitGen1DA()
+        self.logger.info(f'Generating circuits.')
+        circuit_gen = CircuitGen1DA(self.logger)
         circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0), self.tf.h, self.times[1:])
         
-        # Checked
+        self.logger.info(f'Initializing backend.')
         backend = LocalBackend()
         sampler = backend.sampler
+        self.logger.info(f'Backend initialized.')
         
-        # Checked
+        self.logger.info(f'Submitting jobs to backend.')
         jobs = [sampler.run(circuits) for circuits in circuit_groups]
-        _wait_for_completion(jobs)
+        self.logger.info(f'Jobs submitted.')
+        _wait_for_completion(jobs, self.logger)
         result_groups = [job.result() for job in jobs]
+        self.logger.info(f'Jobs completed.')
         
-        # Checked (state order shift -1)
-        tomo = TomographyReal(fitter='cvxpy_gaussian')
+        self.logger.info(f'Running tomography.')
+        tomo = TomographyReal(self.logger, fitter='cvxpy_gaussian')
         states_raw = tomo.run_tomography(result_groups, circuit_gen.observables, self.times[1:])
+        self.logger.info(f'Tomography completed.')
         self.st.states = np.real(parallel_transport(states_raw, self.st.get_state(0)))
-        [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t) for i in range(len(self.times[1:]))]
+        self.logger.info(f'State polarization corrected.')
+        [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t) for i in range(1, len(self.times))]
+        self.logger.info(f'States inverse-transformed.')
         
         self.data['field'] = self.st.get_dict()
         return self.data
     
 class Solver1DCloud(Solver1D):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, logger, **kwargs):
+        super().__init__(logger, **kwargs)
+        self.logger
         self.st = StateProcessor(self.kwargs['nx'], self.kwargs['nt'], shift=1)
         self.st.set_u(self.kwargs['u'], 0)
         self.st.set_v(self.kwargs['v'], 0)
         self.st.forward_state(0, self.tf.t @ self.tf.sqrt_m)
+        self.logger.info(f'Initial state transformed.')
         
     def run(self):
-        circuit_gen = CircuitGen1DA()
-        circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0), self.tf.h, self.times)
-    
+        self.logger.info(f'Generating circuits.')
+        circuit_gen = CircuitGen1DA(self.logger)
+        circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0), self.tf.h, self.times[1:])
+        
+        self.logger.info(f'Initializing backend.')
         backend = CloudBackend()
         sampler = backend.sampler
+        self.logger.info(f'Backend initialized.')
         
+        self.logger.info(f'Submitting {len(circuit_groups)} jobs to backend.')
         jobs, job_ids = [], []
-        for circuits in circuit_groups:
+        for i, circuits in enumerate(circuit_groups):
             job_transmitted = False
             while not job_transmitted:
                 try:
                     job = sampler.run(circuits)
                     job_transmitted = True
                 except Exception as e:
+                    self.logger.warning(f'Job transmission {i} failed with error {e}. Retrying in 5 seconds.')
                     sleep(5)
+            self.logger.info(f'Job {i} submitted with job_id {job.job_id()}.')
             jobs.append(job)
             job_ids.append(job.job_id())
-        _wait_for_completion(jobs)
+        self.logger.info(f'Jobs submitted.')
+        _wait_for_completion(jobs, self.logger)
         result_groups = [job.result() for job in jobs]
+        self.logger.info(f'Jobs completed.')
 
-        tomo = TomographyReal()
-        self.st.states = tomo.run_tomography(result_groups, circuit_gen.observables, self.times)
-        [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t) for i in range(len(self.times))]
+        self.logger.info(f'Running tomography.')
+        tomo = TomographyReal(self.logger, fitter='cvxpy_gaussian')
+        states_raw = tomo.run_tomography(result_groups, circuit_gen.observables, self.times[1:])
+        self.logger.info(f'Tomography completed.')
+        self.st.states = np.real(parallel_transport(states_raw, self.st.get_state(0)))
+        self.logger.info(f'State polarization corrected.')
+        [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t) for i in range(1, len(self.times))]
+        self.logger.info(f'States inverse-transformed.')
         
         self.data['field'] = self.st.get_dict()
         return self.data
 
-def _wait_for_completion(jobs):
+def _wait_for_completion(jobs, logger):
     all_completed = False
     while not all_completed:
-        sleep(5)
+        sleep(10)
         completed = [job.status().name == "DONE" for job in jobs]
-        print(f"Jobs completed: {sum(completed)} | {len(jobs)}")
+        logger.info(f"Jobs completed: {sum(completed)} | {len(jobs)}")
         all_completed = all(completed)
         

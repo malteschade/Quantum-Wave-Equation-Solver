@@ -15,7 +15,8 @@ SYNTHESIS = {
 }
 
 class CircuitGen1DA:
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
         self.meas_circuits = self.measurement_circuits()
         
     def tomography_circuits(self, initial_state, hamiltonian, times,
@@ -33,7 +34,8 @@ class CircuitGen1DA:
         
         circuit_groups = []
         circuits = []
-        for time in times:
+        for idx, time in enumerate(times):
+            self.logger.info(f'Generating circuits for step: {idx+1} | {len(times)}.')
             evo = PauliEvolutionGate(op, time=time, synthesis=synthesis)
             qc_evolution = qc.copy()
             qc_evolution.append(evo.definition, qr)
@@ -52,6 +54,7 @@ class CircuitGen1DA:
                     circuits = []
         if len(circuits) > 0:
             circuit_groups.append(circuits)
+        self.logger.info(f'Circuits generated: {len(times)*len(self.observables)} in {len(circuit_groups)} groups.')
         return circuit_groups
     
     def measurement_circuits(self):
