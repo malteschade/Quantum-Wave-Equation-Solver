@@ -1,12 +1,24 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+{Description}
+{License_info}
+"""
+
+# -------- IMPORTS --------
+# Built-in modules
+from typing import List, Dict
 from itertools import product
 
+# Other modules
 import numpy as np
-
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
-from qiskit.circuit.library import PauliEvolutionGate
+from qiskit.circuit.library import PauliEvolutionGate, StatePreparation
 from qiskit.quantum_info import Operator, SparsePauliOp
 from qiskit.synthesis import SuzukiTrotter, LieTrotter, QDrift, MatrixExponential
 
+# -------- CONSTANTS --------
 SYNTHESIS = {
     'MatrixExponential': MatrixExponential(),
     'LieTrotter': LieTrotter(reps=3),
@@ -14,24 +26,62 @@ SYNTHESIS = {
     'QDrift': QDrift(reps=4)
 }
 
+# -------- CLASSES --------
 class CircuitGen1DA:
-    def __init__(self, logger):
+    """
+    A class for generating quantum circuits for 1D elastic wave forward problems.
+
+    This class is responsible for creating quantum circuits based on given Hamiltonians,
+    initial states, and measurement bases. It supports various methods of Hamiltonian
+    synthesis.
+
+    Args:
+        logger: A logging instance for recording the generation process.
+
+    Attributes:
+        logger (object): Logger for recording information.
+        meas_circuits (dict): Predefined measurement circuits.
+    """
+    def __init__(self, logger: object) -> None:
+        """
+        Initializes the CircuitGen1DA class with a logger.
+
+        Args:
+            logger: A logging instance.
+        """
         self.logger = logger
         self.meas_circuits = self.measurement_circuits()
-        
-    def tomography_circuits(self, initial_state, hamiltonian, times,
-                         synthesis='MatrixExponential', batch_size=100):
+        self.num_qubits = None
+        self.observables = None
+
+    def tomography_circuits(self, initial_state: np.ndarray, hamiltonian: np.ndarray,
+                            times: np.ndarray, synthesis: str = 'MatrixExponential',
+                            batch_size: int = 100) -> List[List[QuantumCircuit]]:
+        """
+        Generates quantum circuits for tomography based on the given parameters.
+
+        Args:
+            initial_state (np.ndarray): The initial state vector for the quantum system.
+            hamiltonian (np.ndarray): The Hamiltonian matrix representing the system dynamics.
+            times (List[float]): A list of times at which to apply the evolution.
+            synthesis (str): The method of Hamiltonian synthesis to use.
+                             Default is 'MatrixExponential'.
+            batch_size (int): The number of circuits per batch. Default is 100.
+
+        Returns:
+            List[List[QuantumCircuit]]: A list of lists containing quantum circuits in batches.
+        """
         self.num_qubits = int(np.log2(hamiltonian.shape[0]))
         self.observables = list(product("ZX", repeat=self.num_qubits))
         synthesis = SYNTHESIS[synthesis]
         op = SparsePauliOp.from_operator(Operator(hamiltonian))
-        
+
         qr = QuantumRegister(self.num_qubits)
         cr = ClassicalRegister(self.num_qubits)
         qc = QuantumCircuit(qr, cr)
-        qc.prepare_state(initial_state, qr)
+        qc.append(StatePreparation(initial_state), qr)
         qc.barrier()
-        
+
         circuit_groups = []
         circuits = []
         for idx, time in enumerate(times):
@@ -40,7 +90,7 @@ class CircuitGen1DA:
             qc_evolution = qc.copy()
             qc_evolution.append(evo.definition, qr)
             qc_evolution.barrier()
-            
+
             for observable in self.observables:
                 qc_measurement = qc_evolution.copy()
                 for i, obs in enumerate(observable):
@@ -48,18 +98,28 @@ class CircuitGen1DA:
                 qc_measurement.barrier()
                 qc_measurement.measure(qr, cr)
                 circuits.append(qc_measurement)
-                
+
                 if len(circuits) == batch_size:
                     circuit_groups.append(circuits)
                     circuits = []
         if len(circuits) > 0:
             circuit_groups.append(circuits)
-        self.logger.info(f'Circuits generated: {len(times)*len(self.observables)} in {len(circuit_groups)} groups.')
+        n_circuits =len(times)*len(self.observables)
+        self.logger.info(f'Circuits generated: {n_circuits} in {len(circuit_groups)} groups.')
         return circuit_groups
-    
-    def measurement_circuits(self):
+
+    def measurement_circuits(self) -> Dict[str, QuantumCircuit]:
+        """
+        Creates basic measurement circuits for Pauli measurements.
+
+        Returns:
+            Dict[str, QuantumCircuit]: A dictionary mapping 'Z', 'X', and 'Y' to their respective
+                                       measurement circuits.
+        """
         meas_z = QuantumCircuit(1, name="PauliMeasZ")
         meas_x = QuantumCircuit(1, name="PauliMeasX")
         meas_y = QuantumCircuit(1, name="PauliMeasY")
-        (meas_x.h(0), meas_y.sdg(0), meas_y.h(0))
+        meas_x.h(0)
+        meas_y.sdg(0)
+        meas_y.h(0)
         return {"Z" : meas_z, "X" : meas_x, "Y" : meas_y}
