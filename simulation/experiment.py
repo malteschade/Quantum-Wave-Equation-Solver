@@ -3,7 +3,7 @@ import pathlib
 import json
 
 from simulation.solvers import Solver1DODE, Solver1DLocal, Solver1DCloud
-from config.logger import setup_logger, handle_ndarray
+from config.logger import Logger, handle_ndarray
 
 class ForwardExperiment1D:
     def __init__(self, verbose=6, data_folder='data'):
@@ -13,7 +13,7 @@ class ForwardExperiment1D:
         self.timestamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
         self.base_data = self.base_data/self.timestamp
         self.base_data.mkdir(parents=True, exist_ok=True)
-        self.logger = setup_logger(self.base_data/'log.log', verbose)
+        self.logger = Logger.setup_logger(self.base_data/'log.log', verbose)
         self.logger.info(f'Created experiment with time stamp: {self.timestamp}.\n')
     
     def add_solver(self, solver: str, dx: float, nx: int, dt: float,  nt: int, order: int, bcs: dict,
