@@ -14,6 +14,7 @@ import json
 
 # Other modules
 import numpy as np
+import deepdish as dd
 
 # Own modules
 from simulation.solvers import Solver1DODE, Solver1DLocal, Solver1DCloud
@@ -92,8 +93,7 @@ class ForwardExperiment1D:
             self.data[idx] = solver.run()
             end_time = datetime.datetime.now()
             self.logger.info('Saving data.')
-            json.dump(self.data[idx], open(self.base_data/f'data_{idx}.json',
-                                            'w', encoding='utf8'))
+            dd.io.save(self.base_data/f'data_{idx}.h5', self.data[idx])
             self.logger.info(f'Solver {idx+1} completed in {end_time-start_time}.\n')
         return self.data
 
@@ -109,19 +109,17 @@ class ForwardExperiment1D:
         for idx in self.configs.keys():
             idx = int(idx)
             self.logger.info(f'Loading data for solver {idx+1}.')
-            if not (self.base_data/f'data_{idx}.json').exists():
+            if not (self.base_data/f'data_{idx}.h5').exists():
                 if self.configs[str(idx)]['solver'] == 'cloud':
                     self.logger.warning(f'No data for solver {idx+1} found. Loading from cloud.')
                     solver = Solver1DCloud(self.base_data,
                                                       self.logger, **self.configs[str(idx)])
                     self.data[idx] = solver.load()
                     self.logger.info(f'Data for solver {idx+1} loaded from cloud.')
-                    json.dump(self.data[idx], open(self.base_data/f'data_{idx}.json',
-                                                    'w', encoding='utf8'))
+                    dd.io.save(self.base_data/f'data_{idx}.h5', self.data[idx])
                 else:
                     raise FileNotFoundError(f'No data for solver {idx+1} found.')
             else:
-                self.data[idx] = json.load(open(self.base_data/f'data_{idx}.json',
-                                                'r', encoding='utf8'))
+                self.data[idx] = dd.io.load(self.base_data/f'data_{idx}.h5')
         self.logger.info('Data loaded.\n')
         return self.data

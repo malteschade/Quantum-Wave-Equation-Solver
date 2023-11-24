@@ -92,12 +92,12 @@ class FDTransform1DA:
         return np.block([[Z, 1j*U],[-1j*U.T, Z]])
 
     def get_dict(self):
-        return {'h': np.imag(self.h).tolist(),
-                't': self.t.tolist(),
-                'inv_t': self.inv_t.tolist(),
-                'k': self.k.tolist(),
-                'q': self.q.tolist(),
-                'u': self.u.tolist(),
-                'd': self.d.tolist(),
-                'sqrt_m': self.sqrt_m.tolist(),
-                'inv_sqrt_m': self.inv_sqrt_m.tolist()}
+        return {'h': self.h,
+                't': self.t,
+                'inv_t': self.inv_t,
+                'k': self.k,
+                'q': self.q,
+                'u': self.u,
+                'd': self.d,
+                'sqrt_m': self.sqrt_m,
+                'inv_sqrt_m': self.inv_sqrt_m}
