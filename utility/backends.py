@@ -14,11 +14,11 @@ from typing import Dict, Tuple
 from qiskit_ibm_runtime import QiskitRuntimeService, Session, Sampler, Options
 from qiskit_aer.primitives import Sampler as AerSampler
 from qiskit_aer.noise import NoiseModel
-from qiskit.providers.fake_provider import (FakeSherbrooke, FakePerth, FakeLagosV2,
+from qiskit.providers.fake_provider import (FakeBackendV2, FakeSherbrooke, FakePerth, FakeLagosV2,
                                             FakeNairobiV2, FakeGuadalupeV2)
 
 # -------- CONSTANTS --------
-FAKE_PROVIDERS: Dict[str, object] = {
+FAKE_PROVIDERS: Dict[str, FakeBackendV2] = {
     'perth': FakePerth(),
     'nairobi': FakeNairobiV2(),
     'guadalupe': FakeGuadalupeV2(),

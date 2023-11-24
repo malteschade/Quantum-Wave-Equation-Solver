@@ -14,7 +14,7 @@ def spike(value: float, length: int, position: int) -> np.ndarray:
 def homogeneous(value: float, length: int) -> np.ndarray:
     _check_inputs(value=value, length=length)
     return np.ones(length) * value
-    
+
 def linear(value_start: float, value_end: float, length: int) -> np.ndarray:
     _check_inputs(value_start=value_start, value_end=value_end, length=length)
     return np.linspace(value_start, value_end, length)

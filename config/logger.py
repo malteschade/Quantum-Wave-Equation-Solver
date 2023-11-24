@@ -70,22 +70,3 @@ class Logger:
         Logger._logger.addHandler(Logger._file_handler)
 
         return Logger._logger
-
-# -------- FUNCTIONS --------
-def handle_ndarray(obj: Any) -> Any:
-    """
-    Converts a numpy ndarray to a list if the object is an ndarray,
-    otherwise returns the object as-is.
-
-    This function is useful for handling numpy ndarrays in contexts where JSON serialization or
-    similar operations are performed, as ndarrays are not directly serializable.
-
-    Args:
-        obj (Any): The object to be converted or passed through.
-
-    Returns:
-        Any: A list if the input was an ndarray, or the original object otherwise.
-    """
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    return obj

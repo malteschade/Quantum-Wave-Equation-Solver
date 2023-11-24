@@ -32,7 +32,8 @@ class MediumProcessor(ProcessorBase):
         return self._get_vals(0)
         
     def get_dict(self) -> dict:
-        return {'mu': self.values_1, 'rho': self.values_2}
+        return {'mu': self.values_1.tolist(),
+                'rho': self.values_2.tolist()}
 
 
 class StateProcessor(ProcessorBase):
@@ -74,4 +75,6 @@ class StateProcessor(ProcessorBase):
         self._set_val2(state[middle:], index)
 
     def get_dict(self) -> dict:
-        return {'u': self.values_1, 'v': self.values_2, 'state': self.states}
+        return {'u': self.values_1.tolist(),
+                'v': self.values_2.tolist(),
+                'state': self.states.tolist()}

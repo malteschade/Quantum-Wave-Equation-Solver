@@ -16,10 +16,10 @@ import numpy as np
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.library import PauliEvolutionGate, StatePreparation
 from qiskit.quantum_info import Operator, SparsePauliOp
-from qiskit.synthesis import SuzukiTrotter, LieTrotter, QDrift, MatrixExponential
+from qiskit.synthesis import ProductFormula, SuzukiTrotter, LieTrotter, QDrift, MatrixExponential
 
 # -------- CONSTANTS --------
-SYNTHESIS = {
+SYNTHESIS: Dict[str, ProductFormula] = {
     'MatrixExponential': MatrixExponential(),
     'LieTrotter': LieTrotter(reps=3),
     'SuzukiTrotter': SuzukiTrotter(order=2, reps=2),
@@ -51,8 +51,6 @@ class CircuitGen1DA:
         """
         self.logger = logger
         self.meas_circuits = self.measurement_circuits()
-        self.num_qubits = None
-        self.observables = None
 
     def tomography_circuits(self, initial_state: np.ndarray, hamiltonian: np.ndarray,
                             times: np.ndarray, synthesis: str = 'MatrixExponential',
@@ -71,13 +69,13 @@ class CircuitGen1DA:
         Returns:
             List[List[QuantumCircuit]]: A list of lists containing quantum circuits in batches.
         """
-        self.num_qubits = int(np.log2(hamiltonian.shape[0]))
-        self.observables = list(product("ZX", repeat=self.num_qubits))
+        num_qubits = int(np.log2(hamiltonian.shape[0]))
+        observables = list(product("ZX", repeat=num_qubits))
         synthesis = SYNTHESIS[synthesis]
         op = SparsePauliOp.from_operator(Operator(hamiltonian))
 
-        qr = QuantumRegister(self.num_qubits)
-        cr = ClassicalRegister(self.num_qubits)
+        qr = QuantumRegister(num_qubits)
+        cr = ClassicalRegister(num_qubits)
         qc = QuantumCircuit(qr, cr)
         qc.append(StatePreparation(initial_state), qr)
         qc.barrier()
@@ -91,7 +89,7 @@ class CircuitGen1DA:
             qc_evolution.append(evo.definition, qr)
             qc_evolution.barrier()
 
-            for observable in self.observables:
+            for observable in observables:
                 qc_measurement = qc_evolution.copy()
                 for i, obs in enumerate(observable):
                     qc_measurement.append(self.meas_circuits[obs], [i])
@@ -104,7 +102,7 @@ class CircuitGen1DA:
                     circuits = []
         if len(circuits) > 0:
             circuit_groups.append(circuits)
-        n_circuits =len(times)*len(self.observables)
+        n_circuits = len(times)*len(observables)
         self.logger.info(f'Circuits generated: {n_circuits} in {len(circuit_groups)} groups.')
         return circuit_groups
 
