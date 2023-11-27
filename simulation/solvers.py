@@ -390,10 +390,10 @@ def _wait_for_completion(jobs: List[object], logger: object) -> None:
 
     all_completed = False
     while not all_completed:
+        sleep(10)
         completed = [job.status().name == "DONE" for job in jobs]
         logger.info(f"Jobs completed: {sum(completed)} | {len(jobs)}")
         all_completed = all(completed)
-        sleep(10)
 
 def _save_jobids(job_ids: List[str], path: str) -> None:
     """
@@ -425,5 +425,5 @@ def _get_circuit_depth(circuit: object, backend: object, logger: object) -> int:
 
         if caught_warnings:
             for warning in caught_warnings:
-                logger.warning(warning.message)
+                logger.debug(warning.message)
     return tr.depth()
