@@ -29,7 +29,7 @@ def _plot_vals(val1, val2, plot_val1: bool = True, plot_val2: bool = True,
         annotation['yshift'] = 10
     return fig
 
-def plot_uv(u, v, time, range_u: tuple = (-1, 1), range_v: tuple = (-3000, 3000), plot_u=True, plot_v=False) -> go.Figure:
+def plot_uv(u, v, time, range_u: tuple = (-1, 1), range_v: tuple = (-4000, 4000), plot_u=True, plot_v=False) -> go.Figure:
     return _plot_vals(u, v, plot_val1=plot_u, plot_val2=plot_v, val1_range=range_u, val2_range=range_v,
                             title=f'$$Wave \; Field \; t = {np.round(time, 8)}$$', val1_name=r'$u [\mu m]$', val2_name=r'$v [\mu m / s^2]$',
                             x_name=r'$x [m]$')

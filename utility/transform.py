@@ -57,47 +57,47 @@ class FDTransform1DA:
     def D(self, order: int, length: int, dx: float) -> np.ndarray:
         return (1/dx) * (1/order) * np.sum([np.diag(np.full(length-k, c), k=-k)
                        for k, c in enumerate(FORWARD_FD_COEFF[order])], axis=0)
-        
+
     def Z(self, length: int) -> np.ndarray:
         return np.zeros((length, length))
-    
+
     def I(self, length: int) -> np.ndarray:
         return np.identity(length)
-    
+
     def SQRT(self, param: np.ndarray) -> np.ndarray:
         return np.diag(np.sqrt(param))
-    
+
     def M(self, rho: np.array, Z: np.array) -> np.ndarray:
         self.sqrt_m = np.block([[self.SQRT(rho), Z],
                                 [Z, self.SQRT(rho)]])
         self.inv_sqrt_m = np.block([[self.SQRT(1/rho), Z],
                                     [Z, self.SQRT(1/rho)]]) 
-    
+
     def U(self, rho: np.ndarray, mu: np.ndarray, D: np.ndarray) -> np.ndarray:
         return self.SQRT(mu) @ D @ self.SQRT(1/rho)
-    
+
     def K(self, U: np.ndarray)  -> np.ndarray:
         return -U.T @ U
-    
+
     def Q(self, K: np.ndarray, Z: np.ndarray, I: np.ndarray) -> np.ndarray:
         return np.block([[Z, I],[K, Z]])
-    
+
     def T(self, U: np.ndarray, Z: np.ndarray, I: np.ndarray) -> np.ndarray:
         return np.block([[U, Z],[Z, I]])
-    
+
     def INV_T(self, T: np.ndarray) -> np.ndarray:
         return np.linalg.inv(T.T @ T) @ T.T # Left inverse | Least squares (full rank)
-    
+
     def H(self, U: np.ndarray, Z: np.ndarray) -> np.ndarray:
         return np.block([[Z, 1j*U],[-1j*U.T, Z]])
 
     def get_dict(self):
-        return {'h': np.imag(self.h).tolist(),
-                't': self.t.tolist(),
-                'inv_t': self.inv_t.tolist(),
-                'k': self.k.tolist(),
-                'q': self.q.tolist(),
-                'u': self.u.tolist(),
-                'd': self.d.tolist(),
-                'sqrt_m': self.sqrt_m.tolist(),
-                'inv_sqrt_m': self.inv_sqrt_m.tolist()}
+        return {'h': self.h,
+                't': self.t,
+                'inv_t': self.inv_t,
+                'k': self.k,
+                'q': self.q,
+                'u': self.u,
+                'd': self.d,
+                'sqrt_m': self.sqrt_m,
+                'inv_sqrt_m': self.inv_sqrt_m}

@@ -54,7 +54,7 @@ class Solver1D:
 
         # Set time steps
         self.times = self.get_times(kwargs['nt'], kwargs['dt'])
-        self.data['times'] = self.times.tolist()
+        self.data['times'] = self.times
         self.logger.info(f'Solving for {self.kwargs["nt"]} time steps.')
         self.logger.debug(f'Times: {self.data["times"]}')
 
@@ -188,7 +188,8 @@ class Solver1DODE(Solver1D):
         """
         self.logger.info('Solving ODE.')
         self.st.states = solve_ivp(lambda t, y: self.tf.q @ y, (0, self.times[-1]),
-                                     self.st.get_state(0), t_eval=self.times).y.T
+                                     self.st.get_state(0), t_eval=self.times,
+                                     method='DOP853').y.T
         self.logger.info('ODE solved.')
         _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m)
          for i in range(len(self.times))]
@@ -231,7 +232,7 @@ class Solver1DLocal(Solver1D):
 
         self.logger.info('Initializing backend.')
         backend = LocalBackend(self.logger, backend=None, fake=None, method='statevector',
-                               max_parallel_experiments=0, seed=0, shots=10000,
+                               max_parallel_experiments=0, seed=0, shots=50000,
                                optimization=3, resilience=1)
         sampler, _ = backend.get_sampler()
         self.logger.info('Backend initialized.')
