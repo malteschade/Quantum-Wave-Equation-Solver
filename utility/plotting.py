@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -39,12 +41,12 @@ def plot_state(state, time,  range_u: tuple = (-1, 1), range_v: tuple = (-3000, 
     return _plot_vals(state_u, state_v, plot_val1=plot_u, plot_val2=plot_v, val1_range=range_u, val2_range=range_v,
                             title=f'$$Statevector \; t={np.round(time, 8)}$$', val1_name=r'$TM^{1/2}u$', val2_name=r'$TM^{1/2}v$',
                             x_name=r'$x [m]$')
-    
+
 def plot_medium(mu, rho, range_mu: tuple = (0, 5e10), range_rho: tuple = (0, 5e3), plot_mu=True, plot_rho=True) -> go.Figure:
     return _plot_vals(mu, rho, plot_val1=plot_mu, plot_val2=plot_rho, val1_range=range_mu, val2_range=range_rho,
                             title=r'$Medium \; Parameters$', val1_name=r'$\mu [Pa]$', val2_name=r'$\rho [kg/m^3]$',
                             x_name=r'$x [m]$')
-    
+
 def plot_heatmap(array: np.ndarray, title='') -> go.Figure:
     assert array.ndim == 2, "Array must be 2D"
     array = np.imag(array) if ~np.all(np.isreal(array)) else array
@@ -58,3 +60,26 @@ def plot_heatmap(array: np.ndarray, title='') -> go.Figure:
     for annotation in fig['layout']['annotations']:
         annotation['font'] = dict(size=20)
     return fig
+
+def plot_anim(y_values_list: list, y_axis_list: list,
+              fps: int = 2, filename: str = 'wave_field.mp4') -> plt.Figure:
+    fig, axs = plt.subplots(2, 3, figsize=(15, 10))
+    axs = axs.flatten()
+
+    lines = []
+    for ax, y_values, y_axis in zip(axs, y_values_list, y_axis_list):
+        line, = ax.plot(y_values[0, :], color='blue')
+        ax.set_ylim(y_axis)
+        lines.append(line)
+
+    def animate(i):
+        for line, y_values in zip(lines, y_values_list):
+            line.set_ydata(y_values[i, :])
+        return lines
+
+    anim = FuncAnimation(fig, animate, frames=len(y_values_list[0]), interval=3000, blit=True)
+    if filename:
+        writer = FFMpegWriter(fps=fps, bitrate=1800)
+        anim.save(filename, writer=writer)
+    else:
+        return anim

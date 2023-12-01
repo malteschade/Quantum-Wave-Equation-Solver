@@ -12,13 +12,11 @@ from typing import Dict, List, Any
 from time import sleep
 from itertools import product
 import json
-import warnings
 
 # Other modules
 import numpy as np
 import scipy
 from scipy.integrate import solve_ivp
-from qiskit.compiler import transpile
 
 # Own modules
 from utility.transform import FDTransform1DA
@@ -190,7 +188,7 @@ class Solver1DODE(Solver1D):
         self.logger.info('Solving ODE.')
         self.st.states = solve_ivp(lambda t, y: self.tf.q @ y, (0, self.times[-1]),
                                      self.st.get_state(0), t_eval=self.times,
-                                     method='DOP853').y.T
+                                     method='Radau').y.T
         self.logger.info('ODE solved.')
         _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m)
          for i in range(len(self.times))]
@@ -265,21 +263,17 @@ class Solver1DLocal(Solver1D):
             Dict[str, Any]: A dictionary containing the field data and other results.
         """
 
-        self.logger.info('Generating circuits.')
-        circuit_gen = CircuitGen1DA(self.logger)
-        circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0),
-                                                         self.tf.h, self.times[1:])
-
         self.logger.info('Initializing backend.')
-        backend = LocalBackend(self.logger, backend=None, fake=None, method='statevector',
-                               max_parallel_experiments=0, seed=0, shots=10000,
+        backend = LocalBackend(self.logger, backend=None, fake='brisbane', method='statevector',
+                               max_parallel_experiments=0, seed=0, shots=1000,
                                optimization=3, resilience=1)
         sampler, _ = backend.get_sampler()
         self.logger.info('Backend initialized.')
 
-        self.logger.info('Calculating circuit depth.')
-        circuit_depth = _get_circuit_depth(circuit_groups[0][0], backend.backend, self.logger)
-        self.logger.info(f'Circuit depth on backend: {circuit_depth}')
+        self.logger.info('Generating circuits.')
+        circuit_gen = CircuitGen1DA(self.logger, backend.fake_backend)
+        circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0),
+                                                         self.tf.h, self.times[1:])
 
         self.logger.info('Submitting jobs to backend.')
         jobs = [sampler.run(circuits) for circuits in circuit_groups]
@@ -330,20 +324,20 @@ class Solver1DCloud(Solver1D):
             Dict[str, Any]: A dictionary containing the field data and other results.
         """
 
-        self.logger.info('Generating circuits.')
-        circuit_gen = CircuitGen1DA(self.logger)
-        circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0),
-                                                         self.tf.h, self.times[1:])
-
         self.logger.info('Initializing backend.')
-        backend = CloudBackend(self.logger, backend='ibmq_qasm_simulator', fake=None,
-                               seed=0, shots=10000, optimization=3, resilience=1)
+        backend = CloudBackend(self.logger, backend='ibm_brisbane', fake=None,
+                               seed=0, shots=1000, optimization=3, resilience=1)
         sampler, _ = backend.get_sampler()
         self.logger.info('Backend initialized.')
 
-        self.logger.info('Calculating circuit depth.')
-        circuit_depth = _get_circuit_depth(circuit_groups[0][0], backend.backend, self.logger)
-        self.logger.info(f'Circuit depth on backend: {circuit_depth}')
+        self.logger.info('Generating circuits.')
+        circuit_gen = CircuitGen1DA(self.logger,
+                                    backend.fake_backend
+                                    if backend.fake_backend
+                                    else backend.backend
+                                    )
+        circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0),
+                                                         self.tf.h, self.times[1:])
 
         self.logger.info(f'Submitting {len(circuit_groups)} jobs to backend.')
         jobs, job_ids = [], []
@@ -431,7 +425,9 @@ def _wait_for_completion(jobs: List[object], logger: object) -> None:
     all_completed = False
     while not all_completed:
         sleep(10)
-        completed = [job.status().name == "DONE" for job in jobs]
+        status = [job.status().name for job in jobs]
+        logger.debug(f"Jobs status: {status}")
+        completed = [job.status().name == 'DONE' for job in jobs]
         logger.info(f"Jobs completed: {sum(completed)} | {len(jobs)}")
         all_completed = all(completed)
 
@@ -446,24 +442,3 @@ def _save_jobids(job_ids: List[str], path: str) -> None:
 
     with open(path, 'w', encoding='utf8') as f:
         json.dump(job_ids, f, indent=4)
-
-def _get_circuit_depth(circuit: object, backend: object, logger: object) -> int:
-    """
-    Returns the depth of a quantum circuit.
-
-    Args:
-        circuit (object): A quantum circuit.
-        backend (object): A quantum backend.
-        seed (int): A seed for the transpiler.
-
-    Returns:
-        int: The depth of the circuit.
-    """
-    with warnings.catch_warnings(record=True) as caught_warnings:
-        warnings.simplefilter("always")
-        tr = transpile(circuit, backend=backend, seed_transpiler=0, optimization_level=3)
-
-        if caught_warnings:
-            for warning in caught_warnings:
-                logger.debug(warning.message)
-    return tr.depth()

@@ -14,15 +14,13 @@ from typing import Dict, Tuple
 from qiskit_ibm_runtime import QiskitRuntimeService, Session, Sampler, Options
 from qiskit_aer.primitives import Sampler as AerSampler
 from qiskit_aer.noise import NoiseModel
-from qiskit.providers.fake_provider import (FakeBackendV2, FakeSherbrooke, FakePerth, FakeLagosV2,
-                                            FakeNairobiV2, FakeGuadalupeV2)
+from qiskit.providers.fake_provider import (FakeBackendV2, FakeSherbrooke, FakeGuadalupeV2)
 
 # -------- CONSTANTS --------
 FAKE_PROVIDERS: Dict[str, FakeBackendV2] = {
-    'perth': FakePerth(),
-    'nairobi': FakeNairobiV2(),
     'guadalupe': FakeGuadalupeV2(),
-    'lagos': FakeLagosV2(),
+    'brisbane': FakeSherbrooke(),
+    'kyoto': FakeSherbrooke(),
     'sherbrooke': FakeSherbrooke()
     }
 
@@ -94,7 +92,7 @@ class BaseBackend:
             "coupling_map": self.fake_backend.coupling_map if self.fake_backend else None,
             "noise_model": NoiseModel.from_backend(self.fake_backend) if self.fake_backend else None
             }
-        transpile_options = {}
+        transpile_options = {"skip_transpilation": True} # Important
         run_options = {"shots": shots}
 
         return Options(
@@ -140,6 +138,7 @@ class CloudBackend(BaseBackend):
             self.logger.error(f'Failed to initialize Runtime Service: {e}')
             raise e
         self.logger.info('Initializing sampler backend.')
+        self.logger.debug(self.options)
         sampler = Sampler(session=session, options=self.options)
         return (sampler, session)
 
@@ -168,6 +167,7 @@ class LocalBackend(BaseBackend):
         """
 
         self.logger.info('Initializing sampler backend.')
+        self.logger.debug(self.options)
         sampler = AerSampler(
         backend_options={**self.options.simulator.__dict__,
                             **{'method': self.kwargs['method'],

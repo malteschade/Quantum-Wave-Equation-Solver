@@ -8,6 +8,7 @@
 
 # -------- IMPORTS --------
 # Built-in modules
+import warnings
 from typing import List, Dict
 from itertools import product
 
@@ -17,6 +18,7 @@ from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.library import PauliEvolutionGate, StatePreparation
 from qiskit.quantum_info import Operator, SparsePauliOp
 from qiskit.synthesis import ProductFormula, SuzukiTrotter, LieTrotter, QDrift, MatrixExponential
+from qiskit.compiler import transpile
 
 # -------- CONSTANTS --------
 SYNTHESIS: Dict[str, ProductFormula] = {
@@ -42,7 +44,7 @@ class CircuitGen1DA:
         logger (object): Logger for recording information.
         meas_circuits (dict): Predefined measurement circuits.
     """
-    def __init__(self, logger: object) -> None:
+    def __init__(self, logger: object, backend: object = None) -> None:
         """
         Initializes the CircuitGen1DA class with a logger.
 
@@ -50,6 +52,7 @@ class CircuitGen1DA:
             logger: A logging instance.
         """
         self.logger = logger
+        self.backend = backend
         self.meas_circuits = self.measurement_circuits()
 
     def tomography_circuits(self, initial_state: np.ndarray, hamiltonian: np.ndarray,
@@ -77,10 +80,19 @@ class CircuitGen1DA:
         qr = QuantumRegister(num_qubits)
         cr = ClassicalRegister(num_qubits)
         qc = QuantumCircuit(qr, cr)
-        qc.append(StatePreparation(initial_state), qr)
+
+        self.logger.debug(initial_state)
+        n = len(initial_state)
+        if np.all(np.nonzero(initial_state)[0] == [n//4, n//4+1]):
+            self.logger.info('Preparing efficient initial state (central spike).')
+            qc.ry(-2*np.arcsin(initial_state[n//4+1]), 0)
+            qc.x(num_qubits-2)
+            qc.z(num_qubits-2)
+        else:
+            self.logger.info('Preparing arbitrary initial state.')
+            qc.append(StatePreparation(initial_state), qr)
         qc.barrier()
 
-        circuit_groups = []
         circuits = []
         for idx, time in enumerate(times):
             self.logger.info(f'Generating circuits for step: {idx+1} | {len(times)}.')
@@ -95,15 +107,31 @@ class CircuitGen1DA:
                     qc_measurement.append(self.meas_circuits[obs], [i])
                 qc_measurement.barrier()
                 qc_measurement.measure(qr, cr)
+
+                if self.backend:
+                    with warnings.catch_warnings(record=True) as caught_warnings:
+                        warnings.simplefilter("always")
+                        qc_measurement = transpile(
+                            qc_measurement,
+                            backend=self.backend,
+                            optimization_level=3,
+                            seed_transpiler=0
+                        )
+
+                        self.logger.debug(
+                            f'Circuit depth after transp.: {qc_measurement.depth()}'
+                        )
+
+                    if caught_warnings:
+                        for _ in caught_warnings:
+                            #self.logger.debug(warning.message)
+                            pass
                 circuits.append(qc_measurement)
 
-                if len(circuits) == batch_size:
-                    circuit_groups.append(circuits)
-                    circuits = []
-        if len(circuits) > 0:
-            circuit_groups.append(circuits)
+        circuit_groups = [circuits[i:i + batch_size] for i in range(0, len(circuits), batch_size)]
         n_circuits = len(times)*len(observables)
         self.logger.info(f'Circuits generated: {n_circuits} in {len(circuit_groups)} groups.')
+        self.logger.info(f'Circuit depth on backend: {circuits[0].depth()}')
         return circuit_groups
 
     def measurement_circuits(self) -> Dict[str, QuantumCircuit]:
