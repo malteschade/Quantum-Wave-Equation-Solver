@@ -16,6 +16,7 @@ import warnings
 
 # Other modules
 import numpy as np
+import scipy
 from scipy.integrate import solve_ivp
 from qiskit.compiler import transpile
 
@@ -131,7 +132,7 @@ class Solver1D:
         Returns:
             FDTransform1DA: An instance of FDTransform1DA initialized with the given parameters.
         """
-
+        # TODO: Implement type of FD (square/non-square)
         # Initialize transform
         return FDTransform1DA(mu, rho, dx, nx, order, bcs)
 
@@ -198,6 +199,45 @@ class Solver1DODE(Solver1D):
         self.data['field'] = self.st.get_dict()
         return self.data
 
+class Solver1DEXP(Solver1D):
+    """
+    A subclass of Solver1D for solving with a classical\
+        Matrix exponential time evolution solver.
+
+    Inherits from Solver1D.
+
+    Args:
+        logger (object): A logging instance to record the process and errors.
+        **kwargs: Arbitrary keyword arguments for configuration.
+    """
+
+    def __init__(self, base_data: object, logger: object, **kwargs) -> None:
+        super().__init__(base_data, logger, **kwargs)
+        self.st = StateProcessor(self.kwargs['nx'], self.kwargs['nt'], shift=1)
+        self.st.set_u(self.kwargs['u'], 0)
+        self.st.set_v(self.kwargs['v'], 0)
+        self.st.forward_state(0, self.tf.t @ self.tf.sqrt_m)
+        self.logger.info('Initial state forward-transformed.')
+
+    def run(self) -> Dict[str, Any]:
+        """
+        Runs the matrix exponential solver and processes the results.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the field data and other results.
+        """
+        self.logger.info('Solving matrix exponential.')
+        self.st.states = np.array([
+            np.real(scipy.linalg.expm(time * 1j * self.tf.h) @ self.st.get_state(0))
+            for time in self.times])
+        self.logger.info('Matrix exponential solved.')
+        _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t)
+         for i in range(len(self.times))]
+        self.logger.info('States inverse-transformed.')
+
+        self.data['field'] = self.st.get_dict()
+        return self.data
+
 class Solver1DLocal(Solver1D):
     """
     A subclass of Solver1D for local quantum computing simulations.
@@ -232,7 +272,7 @@ class Solver1DLocal(Solver1D):
 
         self.logger.info('Initializing backend.')
         backend = LocalBackend(self.logger, backend=None, fake=None, method='statevector',
-                               max_parallel_experiments=0, seed=0, shots=50000,
+                               max_parallel_experiments=0, seed=0, shots=10000,
                                optimization=3, resilience=1)
         sampler, _ = backend.get_sampler()
         self.logger.info('Backend initialized.')

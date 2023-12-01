@@ -13,7 +13,7 @@ class TomographyReal:
         measurements = [result for result_group in result_groups for result in result_group.decompose()]
         quasi_dist = [m.quasi_dists[0] for m in measurements]
         max_key = max(max(dist.keys()) for dist in quasi_dist)
-        [dist.setdefault(i, 0) for dist in quasi_dist for i in range(max_key + 1)]
+        _ = [dist.setdefault(i, 0) for dist in quasi_dist for i in range(max_key + 1)]
         freq = np.array([dist[key] for dist in quasi_dist for key in range(max_key + 1)])
         freq = np.reshape(freq, (len(quasi_dist), max_key+1))
         
@@ -50,7 +50,9 @@ class TomographyReal:
             eigval, eigvec = np.linalg.eig(rho)
             self.logger.debug(f'Eigenvalues: {eigval}')
             self.logger.debug(f'Eigenvectors: {eigvec}')
-            states.append(eigvec[:, np.argmax(eigval)])   
+            state = eigvec[:, np.argmax(eigval)]
+            #state[-1] = 0 # Test
+            states.append(state)
         return np.array(states)
 
 def parallel_transport(states, initial_state):

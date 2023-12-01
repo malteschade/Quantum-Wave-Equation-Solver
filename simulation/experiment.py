@@ -17,7 +17,7 @@ import numpy as np
 import deepdish as dd
 
 # Own modules
-from simulation.solvers import Solver1DODE, Solver1DLocal, Solver1DCloud
+from simulation.solvers import Solver1DODE, Solver1DEXP, Solver1DLocal, Solver1DCloud
 from config.logger import Logger
 
 # -------- CLASSES --------
@@ -46,7 +46,7 @@ class ForwardExperiment1D:
         self.logger.info(f'Adding solver {len(self.solvers)+1}: {solver}')
 
         # Check solver
-        assert solver in ['ode', 'local', 'cloud'], 'Solver not implemented.'
+        assert solver in ['ode', 'exp', 'local', 'cloud'], 'Solver not implemented.'
 
         # Define solver number
         idx = len(self.solvers)
@@ -76,6 +76,8 @@ class ForwardExperiment1D:
         match solver:
             case 'ode':
                 self.solvers.append(Solver1DODE(self.base_data, self.logger, **kwargs))
+            case 'exp':
+                self.solvers.append(Solver1DEXP(self.base_data, self.logger, **kwargs))
             case 'local':
                 self.solvers.append(Solver1DLocal(self.base_data, self.logger, **kwargs))
             case 'cloud':
