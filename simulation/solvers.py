@@ -228,7 +228,7 @@ class Solver1DEXP(Solver1D):
         """
         self.logger.info('Solving matrix exponential.')
         self.st.states = np.array([
-            np.real(scipy.linalg.expm(time * 1j * self.tf.h) @ self.st.get_state(0))
+            np.real(scipy.linalg.expm(time * -1j * self.tf.h) @ self.st.get_state(0))
             for time in self.times])
         self.logger.info('Matrix exponential solved.')
         _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t)
