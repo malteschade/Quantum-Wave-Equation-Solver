@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, FFMpegWriter
+import seaborn as sns
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -83,3 +84,59 @@ def plot_anim(y_values_list: list, y_axis_list: list,
         anim.save(filename, writer=writer)
     else:
         return anim
+
+def plot_multi_v1(idx, times, ode, sim, qpu, rho, mu, bcs):
+    nx = len(rho)
+
+    lbcs, rbcs = bcs['left'], bcs['right']
+    pos_new = {k: np.zeros((len(times), nx+2)) for k in ['ode', 'sim', 'qpu']}
+
+    for key in pos_new:
+        pos_new[key][:, 1:-1] = locals()[key]
+        if lbcs == 'NBC':
+            pos_new[key][:, 0] = locals()[key][:, 0]
+        if rbcs == 'NBC':
+            pos_new[key][:, -1] = locals()[key][:, -1]
+
+    ode = pos_new['ode']
+    sim = pos_new['sim']
+    qpu = pos_new['qpu']
+
+    fig, axes = plt.subplots(2, 3, figsize=(14, 6))
+
+    ax = axes[0, 0]
+    ax2 = ax.twinx()
+
+    ax.plot(np.arange(nx), rho, color='blue', label='$\\rho$')
+    ax.set_ylabel('$\\rho$ [kg/m$^3$]', color='blue')
+    ax.tick_params(axis='y', labelcolor='blue')
+    ax.set_ylim(1e3, 5e3)
+    lines, labels = ax.get_legend_handles_labels()
+
+    ax2.plot(np.arange(nx+1), mu, color='red', label='$\\mu$')
+    ax2.set_ylabel('$\\mu$ [Pa]', color='red')
+    ax2.tick_params(axis='y', labelcolor='red')
+    ax2.set_ylim(0.5e10, 4.5e10)
+    lines2, labels2 = ax2.get_legend_handles_labels()
+
+    ax2.legend(lines + lines2, labels + labels2, loc='lower right')
+
+    for i_plt, i in enumerate(idx):
+        ax = axes[(i_plt+1) // 3, (i_plt+1) % 3]
+        sns.scatterplot(x=np.arange(nx+2), y=ode[i], ax=ax,
+                        label='Classical ODE Solver', color='black')
+        sns.lineplot(x=np.arange(nx+2), y=sim[i], ax=ax,
+                     label='Noise Free Simulator', color='red')
+        sns.lineplot(x=np.arange(nx+2), y=qpu[i], ax=ax,
+                     label='Quantum Computer', color='blue')
+        ax.set_title(f"t={times[i]:.4f}s")
+        ax.set_xlabel("x [m]")
+        ax.set_ylabel("u [$\mu$ m]")
+        ax.set_ylim(-1, 1)
+        if i_plt == 0:
+            ax.legend(loc='lower right')
+        else:
+            ax.legend([],[], frameon=False)
+
+    plt.tight_layout()
+    return fig

@@ -264,7 +264,7 @@ class Solver1DLocal(Solver1D):
         """
 
         self.logger.info('Initializing backend.')
-        backend = LocalBackend(self.logger, backend=None, fake='brisbane', method='statevector',
+        backend = LocalBackend(self.logger, backend=None, fake=None, method='statevector',
                                max_parallel_experiments=0, seed=0, shots=1000,
                                optimization=3, resilience=1)
         sampler, _ = backend.get_sampler()

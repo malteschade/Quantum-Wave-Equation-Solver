@@ -92,7 +92,7 @@ class BaseBackend:
             "coupling_map": self.fake_backend.coupling_map if self.fake_backend else None,
             "noise_model": NoiseModel.from_backend(self.fake_backend) if self.fake_backend else None
             }
-        transpile_options = {"skip_transpilation": True} # Important
+        transpile_options = {"skip_transpilation": False} # Important
         run_options = {"shots": shots}
 
         return Options(
