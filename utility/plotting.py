@@ -4,28 +4,29 @@ from matplotlib.animation import FuncAnimation, FFMpegWriter
 import seaborn as sns
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+plt.rcParams['font.family'] = 'Times New Roman'
 
 def _plot_vals(val1, val2, plot_val1: bool = True, plot_val2: bool = True,
                 val1_range: tuple = (0, 1), val2_range: tuple = (0, 1), title: str = '',
                 val1_name: str = '', val2_name: str = '', x_name: str = '') -> go.Figure:
     x = np.arange(np.max([len(val1), len(val2)]))
-    
+
     fig = make_subplots(rows=1, cols=1,subplot_titles=[title], specs=[[{'secondary_y': True}]])
-    
+
     if plot_val2:
         fig.add_trace(go.Scatter(x=x, y=val2, mode='lines', name=val2_name, line=dict(color='blue'),
                                 showlegend=False), secondary_y=True)
-    
+
     if plot_val1:
         fig.add_trace(go.Scatter(x=x, y=val1, mode='lines', name=val1_name, line=dict(color='red'),
                                 showlegend=False), secondary_y=False)
-    
+
     fig.update_yaxes(title_text=val1_name, range=val1_range, exponentformat='e',
                         showexponent='all', title_font=dict(color='red'))
     fig.update_yaxes(title_text=val2_name, secondary_y=True,
                         range=val2_range, title_font=dict(color='blue'))
     fig.update_xaxes(title_text=x_name)
-    
+
     fig.update_layout(font=dict(size=15))
     for annotation in fig['layout']['annotations']:
         annotation['font'] = dict(size=20)
@@ -113,7 +114,7 @@ def plot_multi_v1(idx, times, ode, sim, qpu, rho, mu, bcs):
     ax.set_ylim(1e3, 5e3)
     lines, labels = ax.get_legend_handles_labels()
 
-    ax2.plot(np.arange(nx+1), mu, color='red', label='$\\mu$')
+    ax2.plot(np.arange(nx), mu[:-1], color='red', label='$\\mu$')
     ax2.set_ylabel('$\\mu$ [Pa]', color='red')
     ax2.tick_params(axis='y', labelcolor='red')
     ax2.set_ylim(0.5e10, 4.5e10)
@@ -129,7 +130,7 @@ def plot_multi_v1(idx, times, ode, sim, qpu, rho, mu, bcs):
                      label='Noise Free Simulator', color='red')
         sns.lineplot(x=np.arange(nx+2), y=qpu[i], ax=ax,
                      label='Quantum Computer', color='blue')
-        ax.set_title(f"t={times[i]:.4f}s")
+        ax.set_title(f"t = {times[i]:.4f} s")
         ax.set_xlabel("x [m]")
         ax.set_ylabel("u [$\mu$ m]")
         ax.set_ylim(-1, 1)
