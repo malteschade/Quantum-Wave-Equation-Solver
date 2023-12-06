@@ -36,6 +36,10 @@ from utility.distributions import spike, ricker, gaussian, raised_cosine, sinc, 
 
 # -------- FUNCTIONS --------
 def main() -> None:
+    """
+    Runs the quantum 1D elastic wave equation solver.
+    """
+
     # Create experiment
     experiment = ForwardExperiment1D(verbose=2)
 

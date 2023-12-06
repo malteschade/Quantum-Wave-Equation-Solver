@@ -37,6 +37,15 @@ from qiskit_experiments.library.tomography.fitters import (linear_inversion,
                                                            scipy_linear_lstsq, scipy_gaussian_lstsq,
                                                            cvxpy_linear_lstsq, cvxpy_gaussian_lstsq)
 
+# -------- CONSTANTS --------
+FITTER_FUNCTIONS = {
+    'linear': linear_inversion,
+    'cvxpy_gaussian': cvxpy_gaussian_lstsq,
+    'cvxpy_linear': cvxpy_linear_lstsq,
+    'scipy_gaussian': scipy_gaussian_lstsq,
+    'scipy_linear': scipy_linear_lstsq,
+}
+
 # -------- CLASSES --------
 class TomographyReal:
     """
@@ -83,22 +92,8 @@ class TomographyReal:
             self.logger.info(f'Tomography step: {i+1} | {len(times)}.')
             freq_step = freq[i*len(observables):(i+1)*len(observables)]
             outcome_data = np.expand_dims(freq_step * shot_data[:, np.newaxis], axis=0)
-            match self.fitter:
-                case 'linear':
-                    rho, metadata = linear_inversion(outcome_data, shot_data,measurement_data,
-                                                    preparation_data, **fitter_kwargs)
-                case 'cvxpy_gaussian':
-                    rho, metadata = cvxpy_gaussian_lstsq(outcome_data, shot_data, measurement_data,
-                                                        preparation_data, **fitter_kwargs)
-                case 'cvxpy_linear':
-                    rho, metadata = cvxpy_linear_lstsq(outcome_data, shot_data, measurement_data,
-                                                    preparation_data, **fitter_kwargs)
-                case 'scipy_gaussian':
-                    rho, metadata = scipy_gaussian_lstsq(outcome_data, shot_data, measurement_data,
-                                                        preparation_data, **fitter_kwargs)
-                case 'scipy_linear':
-                    rho, metadata = scipy_linear_lstsq(outcome_data, shot_data, measurement_data,
-                                                    preparation_data, **fitter_kwargs)
+            rho, metadata = FITTER_FUNCTIONS[self.fitter](
+                outcome_data, shot_data,measurement_data, preparation_data, **fitter_kwargs)
             eigval, eigvec = np.linalg.eig(rho)
             self.logger.debug(f'Eigenvalues: {eigval}')
             self.logger.debug(f'Eigenvectors: {eigvec}')
