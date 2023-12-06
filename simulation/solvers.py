@@ -42,11 +42,11 @@ import scipy
 from scipy.integrate import solve_ivp
 
 # Own modules
-from utility.transform import FDTransform1DA
-from utility.processing import MediumProcessor, StateProcessor
-from utility.backends import CloudBackend, LocalBackend, BackendService
-from utility.circuits import CircuitGen1DA
-from utility.tomography import TomographyReal, parallel_transport
+from qcws.utility.transform import FDTransform1DA
+from qcws.utility.processing import MediumProcessor, StateProcessor
+from qcws.utility.backends import CloudBackend, LocalBackend, BackendService
+from qcws.utility.circuits import CircuitGen1DA
+from qcws.utility.tomography import TomographyReal, parallel_transport
 
 # -------- CLASSES --------
 class Solver1D:
@@ -182,7 +182,7 @@ class Solver1D:
 
 class Solver1DODE(Solver1D):
     """
-    A subclass of Solver1D for solving with a classical\
+    A subclass of Solver1D for solving with a classical
         Ordinary Differential Equations (ODEs) solver.
 
     Inherits from Solver1D and adds specific methods for handling ODEs.
@@ -222,7 +222,7 @@ class Solver1DODE(Solver1D):
 
 class Solver1DEXP(Solver1D):
     """
-    A subclass of Solver1D for solving with a classical\
+    A subclass of Solver1D for solving with a classical
         Matrix exponential time evolution solver.
 
     Inherits from Solver1D.

@@ -40,11 +40,15 @@ import numpy as np
 import deepdish as dd
 
 # Own modules
-from simulation.solvers import Solver1DODE, Solver1DEXP, Solver1DLocal, Solver1DCloud
-from config.logger import Logger
+from qcws.config.logger import Logger
+from .solvers import Solver1DODE, Solver1DEXP, Solver1DLocal, Solver1DCloud
 
 # -------- CLASSES --------
 class ForwardExperiment1D:
+    """
+    Class for running a 1D forward elastic wave simulation experiment
+    through different implementations.
+    """
     def __init__(self, experiment_id=None, verbose=6, data_folder='data'):
         self.solvers = []
         self.data = {}
@@ -65,7 +69,25 @@ class ForwardExperiment1D:
             self.logger.info(f'Created experiment with time stamp: {self.timestamp}.\n')
 
     def add_solver(self, solver: str, dx: float, nx: int, dt: float,  nt: int, order: int,
-                   bcs: dict, mu: list, rho: list,  u: list, v: list, backend: dict):
+                   bcs: dict, mu: np.ndarray, rho: np.ndarray,
+                   u: np.ndarray, v: np.ndarray, backend: dict):
+        """
+        Add a 1D solver to the experiment.
+        
+        Args:
+            solver (str): Solver type. One of 'ode', 'exp', 'local', 'cloud'.
+            dx (float): Spatial step size.
+            nx (int): Number of spatial grid points.
+            dt (float): Temporal step size.
+            nt (int): Number of temporal grid points.
+            order (int): FD Order of the solver.
+            bcs (dict): Boundary conditions.
+            mu (np.ndarray): Medium elastic moduli.
+            rho (np.ndarray): Medium densities.
+            u (np.ndarray): Initial condition for positions.
+            v (np.ndarray): Initial condition for velocities.
+            backend (dict): Backend configuration.
+        """
         self.logger.info(f'Adding solver {len(self.solvers)+1}: {solver}')
 
         # Check solver
@@ -108,6 +130,12 @@ class ForwardExperiment1D:
         self.logger.info(f'Solver {idx} added.\n')
 
     def run(self):
+        """
+        Run the experiment.
+        
+        Returns:
+            dict: Simulation results.
+        """
         # Save configs
         json.dump(self.configs, open(self.base_data/'configs.json', 'w', encoding='utf8'), indent=4)
 
@@ -123,6 +151,12 @@ class ForwardExperiment1D:
         return self.data
 
     def load(self):
+        """
+        Load the experiment.
+        
+        Returns:
+            dict: Simulation results.
+        """
         self.logger.info(f'Loading experiment with time stamp: {self.timestamp}.\n')
 
         # Load configs
