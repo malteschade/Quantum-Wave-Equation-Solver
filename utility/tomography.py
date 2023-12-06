@@ -39,11 +39,27 @@ from qiskit_experiments.library.tomography.fitters import (linear_inversion,
 
 # -------- CLASSES --------
 class TomographyReal:
-    def __init__(self, logger, fitter):
+    """
+    Class that performs a state tomography on the measurement results of a quantum experiment.
+    """
+
+    def __init__(self, logger: object, fitter: str) -> None:
         self.logger = logger
         self.fitter = fitter
 
-    def run_tomography(self, result_groups, observables, times):
+    def run_tomography(self, result_groups: list, observables: list, times: list) -> np.ndarray:
+        """
+        Run a state tomography on the measurement results of a quantum experiment.
+        
+        Args:
+            result_groups (list): The measurement results of the experiment.
+            observables (list): The observables that were measured.
+            times (list): The times at which the tomography is performed.
+            
+        Returns:
+            np.ndarray: The tomography result states.
+        """
+
         measurements = [result for result_group in result_groups
                         for result in result_group.decompose()]
         quasi_dist = [m.quasi_dists[0] for m in measurements]
@@ -93,6 +109,16 @@ class TomographyReal:
 
 # -------- FUNCTIONS --------
 def parallel_transport(states: np.ndarray, initial_state: np.ndarray) -> np.ndarray:
+    """
+    Parallel transport phase correction of states.
+    
+    Args:
+        states (np.ndarray): The states to be corrected.
+        initial_state (np.ndarray): The initial state.
+        
+    Returns:
+        np.ndarray: The corrected states.
+    """
     corrected_states = [initial_state]
     for state in states:
         ref_state = corrected_states[-1]

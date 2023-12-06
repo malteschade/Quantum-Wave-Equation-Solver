@@ -143,7 +143,7 @@ class CloudBackend(BaseBackend):
         backend_service = BackendService()
         self.service = backend_service.service
         self.backend = backend_service.backends.get(kwargs['backend'], None)
-        self.logger.info('Connection successfull.')
+        self.logger.info('Connection successful.')
 
     def get_sampler(self) -> Tuple[Sampler, Session]:
         """
