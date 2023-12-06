@@ -162,3 +162,4 @@ cython_debug/
 # User files
 data/*
 *.mp4
+.DS_Store
