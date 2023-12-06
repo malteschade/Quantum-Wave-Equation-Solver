@@ -1,5 +1,16 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+{Description}
+{License_info}
+"""
+
+# -------- IMPORTS --------
+# Other modules
 import numpy as np
 
+# -------- CLASSES --------
 class ProcessorBase:
     def __init__(self, n_val1: int, n_val2: int, nt: int) -> None:
         self._n_val1 = n_val1

@@ -130,7 +130,6 @@ class Solver1D:
         Returns:
             FDTransform1DA: An instance of FDTransform1DA initialized with the given parameters.
         """
-        # TODO: Implement type of FD (square/non-square)
         # Initialize transform
         return FDTransform1DA(mu, rho, dx, nx, order, bcs)
 
@@ -190,6 +189,7 @@ class Solver1DODE(Solver1D):
                                      self.st.get_state(0), t_eval=self.times,
                                      method='Radau').y.T
         self.logger.info('ODE solved.')
+
         _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m)
          for i in range(len(self.times))]
         self.logger.info('States inverse-transformed.')
@@ -229,6 +229,7 @@ class Solver1DEXP(Solver1D):
             np.real(scipy.linalg.expm(time * -1j * self.tf.h) @ self.st.get_state(0))
             for time in self.times])
         self.logger.info('Matrix exponential solved.')
+
         _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t)
          for i in range(len(self.times))]
         self.logger.info('States inverse-transformed.')
@@ -264,16 +265,30 @@ class Solver1DLocal(Solver1D):
         """
 
         self.logger.info('Initializing backend.')
-        backend = LocalBackend(self.logger, backend=None, fake=None, method='statevector',
-                               max_parallel_experiments=0, seed=0, shots=1000,
-                               optimization=3, resilience=1)
+        backend = LocalBackend(self.logger,
+                               backend=None,
+                               fake=self.kwargs['backend']['fake'],
+                               method=self.kwargs['backend']['method'],
+                               seed=self.kwargs['backend']['seed'],
+                               shots=self.kwargs['backend']['shots'],
+                               optimization=self.kwargs['backend']['optimization'],
+                               resilience=self.kwargs['backend']['resilience'],
+                               local_transpilation = self.kwargs['backend']['local_transpilation'],
+                               max_parallel_experiments=0)
         sampler, _ = backend.get_sampler()
         self.logger.info('Backend initialized.')
 
         self.logger.info('Generating circuits.')
         circuit_gen = CircuitGen1DA(self.logger, backend.fake_backend)
-        circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0),
-                                                         self.tf.h, self.times[1:])
+        circuit_groups = circuit_gen.tomography_circuits(
+            self.st.get_state(0),
+            self.tf.h,
+            self.times[1:],
+            self.kwargs['backend']['synthesis'],
+            self.kwargs['backend']['batch_size'],
+            self.kwargs['backend']['optimization'],
+            self.kwargs['backend']['seed'],
+            self.kwargs['backend']['local_transpilation'])
 
         self.logger.info('Submitting jobs to backend.')
         jobs = [sampler.run(circuits) for circuits in circuit_groups]
@@ -283,10 +298,12 @@ class Solver1DLocal(Solver1D):
         self.logger.info('Jobs completed.')
 
         self.logger.info('Running tomography.')
-        tomo = TomographyReal(self.logger, fitter='cvxpy_gaussian')
+        tomo = TomographyReal(self.logger, self.kwargs['backend']['fitter'])
         observables = list(product("ZX", repeat=int(np.log2(self.tf.h.shape[0]))))
+        self.logger.debug(f'Observables: {observables}')
         states_raw = tomo.run_tomography(result_groups, observables, self.times[1:])
         self.logger.info('Tomography completed.')
+
         self.st.states = np.real(parallel_transport(states_raw, self.st.get_state(0)))
         self.logger.info('State polarization corrected.')
         _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t)
@@ -325,8 +342,15 @@ class Solver1DCloud(Solver1D):
         """
 
         self.logger.info('Initializing backend.')
-        backend = CloudBackend(self.logger, backend='ibm_brisbane', fake=None,
-                               seed=0, shots=1000, optimization=3, resilience=1)
+        backend = CloudBackend(self.logger,
+                               backend=self.kwargs['backend']['backend'],
+                               fake=self.kwargs['backend']['fake'],
+                               seed=self.kwargs['backend']['seed'],
+                               shots=self.kwargs['backend']['shots'],
+                               optimization=self.kwargs['backend']['optimization'],
+                               resilience=self.kwargs['backend']['resilience'],
+                               local_transpilation = self.kwargs['backend']['local_transpilation'])
+
         sampler, _ = backend.get_sampler()
         self.logger.info('Backend initialized.')
 
@@ -334,10 +358,16 @@ class Solver1DCloud(Solver1D):
         circuit_gen = CircuitGen1DA(self.logger,
                                     backend.fake_backend
                                     if backend.fake_backend
-                                    else backend.backend
-                                    )
-        circuit_groups = circuit_gen.tomography_circuits(self.st.get_state(0),
-                                                         self.tf.h, self.times[1:])
+                                    else backend.backend)
+        circuit_groups = circuit_gen.tomography_circuits(
+            self.st.get_state(0),
+            self.tf.h,
+            self.times[1:],
+            self.kwargs['backend']['synthesis'],
+            self.kwargs['backend']['batch_size'],
+            self.kwargs['backend']['optimization'],
+            self.kwargs['backend']['seed'],
+            self.kwargs['backend']['local_transpilation'])
 
         self.logger.info(f'Submitting {len(circuit_groups)} jobs to backend.')
         jobs, job_ids = [], []
@@ -361,10 +391,12 @@ class Solver1DCloud(Solver1D):
         self.logger.info('Jobs completed.')
 
         self.logger.info('Running tomography.')
-        tomo = TomographyReal(self.logger, fitter='cvxpy_gaussian')
+        tomo = TomographyReal(self.logger, self.kwargs['backend']['fitter'])
         observables = list(product("ZX", repeat=int(np.log2(self.tf.h.shape[0]))))
+        self.logger.debug(f'Observables: {observables}')
         states_raw = tomo.run_tomography(result_groups, observables, self.times[1:])
         self.logger.info('Tomography completed.')
+
         self.st.states = np.real(parallel_transport(states_raw, self.st.get_state(0)))
         self.logger.info('State polarization corrected.')
         _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t)
@@ -399,10 +431,12 @@ class Solver1DCloud(Solver1D):
         self.logger.info('Jobs completed.')
 
         self.logger.info('Running tomography.')
-        tomo = TomographyReal(self.logger, fitter='cvxpy_gaussian')
+        tomo = TomographyReal(self.logger, self.kwargs['backend']['fitter'])
         observables = list(product("ZX", repeat=int(np.log2(self.tf.h.shape[0]))))
+        self.logger.debug(f'Observables: {observables}')
         states_raw = tomo.run_tomography(result_groups, observables, self.times[1:])
         self.logger.info('Tomography completed.')
+
         self.st.states = np.real(parallel_transport(states_raw, self.st.get_state(0)))
         self.logger.info('State polarization corrected.')
         _ = [self.st.inverse_state(i, self.tf.inv_sqrt_m @ self.tf.inv_t)
@@ -413,7 +447,7 @@ class Solver1DCloud(Solver1D):
         return self.data
 
 # -------- FUNCTIONS --------
-def _wait_for_completion(jobs: List[object], logger: object) -> None:
+def _wait_for_completion(jobs: List[object], logger: object, sleep_time: float = 10) -> None:
     """
     Waits for a list of jobs to complete.
 
@@ -424,14 +458,15 @@ def _wait_for_completion(jobs: List[object], logger: object) -> None:
 
     all_completed = False
     while not all_completed:
-        sleep(10)
+        sleep(sleep_time)
         status = [job.status().name for job in jobs]
         logger.debug(f"Jobs status: {status}")
         completed = [job.status().name == 'DONE' for job in jobs]
         logger.info(f"Jobs completed: {sum(completed)} | {len(jobs)}")
         all_completed = all(completed)
 
-def _save_jobids(job_ids: List[str], path: str) -> None:
+def _save_jobids(job_ids: List[str], path: str, indent: int = 4,
+                 encoding: str = 'utf8') -> None:
     """
     Saves a list of job IDs to a JSON file.
 
@@ -440,5 +475,5 @@ def _save_jobids(job_ids: List[str], path: str) -> None:
         path (str): The path to save the job IDs to.
     """
 
-    with open(path, 'w', encoding='utf8') as f:
-        json.dump(job_ids, f, indent=4)
+    with open(path, 'w', encoding=encoding) as f:
+        json.dump(job_ids, f, indent=indent)

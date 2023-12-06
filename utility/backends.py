@@ -59,12 +59,12 @@ class BaseBackend:
 
     def __init__(self, **kwargs):
         self.kwargs = kwargs
-        self.options = self.init_options(kwargs['backend'], kwargs['fake'], kwargs['seed'],
+        self.options = self.init_options(kwargs['fake'], kwargs['seed'],
                                          kwargs['shots'], kwargs['optimization'],
-                                         kwargs['resilience'])
+                                         kwargs['resilience'], kwargs['local_transpilation'])
 
-    def init_options(self, backend: str, fake: str, seed: int, shots: int,
-                     optimization: int, resilience: int) -> Options:
+    def init_options(self, fake: str, seed: int, shots: int,
+                     optimization: int, resilience: int, local_transpilation: bool) -> Options:
         """
         Initializes and returns the options for the quantum computing backend.
 
@@ -78,23 +78,20 @@ class BaseBackend:
             shots (int): The number of shots (repetitions) for each circuit execution.
             optimization (int): The level of optimization to use for the transpiler.
             resilience (int): The level of resilience to noise to use for the transpiler.
+            skip_transpilation (bool): Skip transpilation in cloud service.
 
         Returns:
             Options: An object containing various settings for the backend, including simulation, 
                      transpilation, and execution options.
         """
-
-        self.service = BackendService().service if backend else None
-        self.backend = BackendService().backends.get(backend, None) if backend else None
         self.fake_backend = FAKE_PROVIDERS.get(fake, None)
         simulator_options = {
             "seed_simulator": seed,
             "coupling_map": self.fake_backend.coupling_map if self.fake_backend else None,
             "noise_model": NoiseModel.from_backend(self.fake_backend) if self.fake_backend else None
             }
-        transpile_options = {"skip_transpilation": False} # Important
+        transpile_options = {"skip_transpilation": local_transpilation}
         run_options = {"shots": shots}
-
         return Options(
             optimization_level=optimization,
             resilience_level=resilience,
@@ -119,6 +116,11 @@ class CloudBackend(BaseBackend):
         self.logger = logger
         self.logger.info('Setting backend options.')
         super().__init__(**kwargs)
+        self.logger.info('Connecting to QiskitRuntimeService.')
+        backend_service = BackendService()
+        self.service = backend_service.service
+        self.backend = backend_service.backends.get(kwargs['backend'], None)
+        self.logger.info('Connection successfull.')
 
     def get_sampler(self) -> Tuple[Sampler, Session]:
         """
@@ -138,7 +140,7 @@ class CloudBackend(BaseBackend):
             self.logger.error(f'Failed to initialize Runtime Service: {e}')
             raise e
         self.logger.info('Initializing sampler backend.')
-        self.logger.debug(self.options)
+        self.logger.debug(f'Backend options: {self.options}')
         sampler = Sampler(session=session, options=self.options)
         return (sampler, session)
 
@@ -167,7 +169,7 @@ class LocalBackend(BaseBackend):
         """
 
         self.logger.info('Initializing sampler backend.')
-        self.logger.debug(self.options)
+        self.logger.debug(f'Backend options: {self.options}')
         sampler = AerSampler(
         backend_options={**self.options.simulator.__dict__,
                             **{'method': self.kwargs['method'],

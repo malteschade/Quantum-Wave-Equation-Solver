@@ -7,15 +7,12 @@
 """
 
 # -------- IMPORTS --------
-import numpy as np
-import plotly.express as px
-import plotly.graph_objs as go
+# Own modules
 from simulation.experiment import ForwardExperiment1D
 from utility.distributions import spike, ricker, gaussian, raised_cosine, sinc, homogeneous, exponential, polynomial
-from utility.plotting import plot_uv, plot_state, plot_medium, plot_heatmap
 
 # -------- FUNCTIONS --------
-def main():
+def main() -> None:
     # Create experiment
     experiment = ForwardExperiment1D(verbose=2)
 
@@ -35,7 +32,7 @@ def main():
         'backend': {}
         }
 
-    #  Define solvers
+    # Define solvers
     experiment.add_solver('ode', **parameters)
     experiment.add_solver('local', **parameters)
 

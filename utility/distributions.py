@@ -1,5 +1,16 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+{Description}
+{License_info}
+"""
+
+# -------- IMPORTS --------
+# Other modules
 import numpy as np
 
+# -------- FUNCTIONS --------
 def _check_inputs(**kwargs) -> None:
     assert kwargs.get('length', 1) > 0, 'length must be positive'
     assert kwargs.get('position', 1) >= 0, 'position must be non-negative'

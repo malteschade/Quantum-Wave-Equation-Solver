@@ -56,8 +56,9 @@ class CircuitGen1DA:
         self.meas_circuits = self.measurement_circuits()
 
     def tomography_circuits(self, initial_state: np.ndarray, hamiltonian: np.ndarray,
-                            times: np.ndarray, synthesis: str = 'MatrixExponential',
-                            batch_size: int = 100) -> List[List[QuantumCircuit]]:
+                            times: np.ndarray, synthesis: str, batch_size: int,
+                            optimization: int, seed: int, local_transpilation: bool,
+                            )  -> List[List[QuantumCircuit]]:
         """
         Generates quantum circuits for tomography based on the given parameters.
 
@@ -108,14 +109,14 @@ class CircuitGen1DA:
                 qc_measurement.barrier()
                 qc_measurement.measure(qr, cr)
 
-                if self.backend:
+                if local_transpilation:
                     with warnings.catch_warnings(record=True) as caught_warnings:
                         warnings.simplefilter("always")
                         qc_measurement = transpile(
                             qc_measurement,
                             backend=self.backend,
-                            optimization_level=3,
-                            seed_transpiler=0
+                            optimization_level=optimization,
+                            seed_transpiler=seed
                         )
 
                         self.logger.debug(
@@ -124,7 +125,7 @@ class CircuitGen1DA:
 
                     if caught_warnings:
                         for _ in caught_warnings:
-                            #self.logger.debug(warning.message)
+                            # self.logger.debug(warning.message)
                             pass
                 circuits.append(qc_measurement)
 
