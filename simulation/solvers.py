@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Sub-module for implementing different wave equation solvers.}
 
 {
     MIT License

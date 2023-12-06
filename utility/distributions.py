@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Sub-module for giving different parameter distributions for
+initial conditions and material properties.}
 
 {
     MIT License

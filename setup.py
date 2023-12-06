@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Setup script for the quantum 1D elastic wave equation solver module.}
 
 {
     MIT License
@@ -49,4 +49,3 @@ setup(
     license='MIT',
     status='IN PROGRESS'
 )
-# pip install .

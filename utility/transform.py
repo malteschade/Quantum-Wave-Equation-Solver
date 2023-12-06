@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Sub-module for calculating the transforms and hamiltonian
+for the 1D elastic wave equation solver.}
 
 {
     MIT License

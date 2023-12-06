@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Sub-module for handling cloud and local backends.}
 
 {
     MIT License

@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Sub-module for creating and managing quantum simulation
+algorithm circuits with state initialization and state readout.}
 
 {
     MIT License

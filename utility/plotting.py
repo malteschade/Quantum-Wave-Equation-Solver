@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{DEPRECEATED: Sub-module for plotting functions.}
 
 {
     MIT License

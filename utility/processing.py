@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Sub-module for processing the states and medium properties of a quantum experiment.}
 
 {
     MIT License

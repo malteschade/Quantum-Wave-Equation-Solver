@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Main module for running the quantum 1D elastic wave equation solver.}
 
 {
     MIT License

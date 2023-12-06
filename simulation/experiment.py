@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Sub-module for implementing a forward simulation experiment
+with different wave equation solvers. Handling of data saving
+and data loading.}
 
 {
     MIT License

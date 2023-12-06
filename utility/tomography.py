@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-{Description}
+{Sub-module for performing a real-valued quantum state tomography
+on the measurement results of a quantum experiment.}
 
 {
     MIT License
