@@ -31,8 +31,8 @@
 
 # -------- IMPORTS --------
 # Own modules
-from .simulation.experiment import ForwardExperiment1D
-from .utility.distributions import (spike, ricker, gaussian, raised_cosine,
+from simulation.experiment import ForwardExperiment1D
+from utility.distributions import (spike, ricker, gaussian, raised_cosine,
                                     sinc, homogeneous, exponential, polynomial)
 
 # -------- FUNCTIONS --------

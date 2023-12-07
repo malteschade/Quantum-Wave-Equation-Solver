@@ -42,11 +42,11 @@ import scipy
 from scipy.integrate import solve_ivp
 
 # Own modules
-from qcws.utility.transform import FDTransform1DA
-from qcws.utility.processing import MediumProcessor, StateProcessor
-from qcws.utility.backends import CloudBackend, LocalBackend, BackendService
-from qcws.utility.circuits import CircuitGen1DA
-from qcws.utility.tomography import TomographyReal, parallel_transport
+from utility.transform import FDTransform1DA
+from utility.processing import MediumProcessor, StateProcessor
+from utility.backends import CloudBackend, LocalBackend, BackendService
+from utility.circuits import CircuitGen1DA
+from utility.tomography import TomographyReal, parallel_transport
 
 # -------- CLASSES --------
 class Solver1D:
@@ -73,6 +73,9 @@ class Solver1D:
         # Check parameters
         self.check_kwargs()
         self.logger.info('Parameters checked for validity.')
+
+        # Save kwargs
+        self.data['settings'] = kwargs
 
         # Set time steps
         self.times = self.get_times(kwargs['nt'], kwargs['dt'])

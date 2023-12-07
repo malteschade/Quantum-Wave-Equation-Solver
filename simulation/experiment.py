@@ -42,7 +42,8 @@ import numpy as np
 import deepdish as dd
 
 # Own modules
-from qcws.config.logger import Logger
+from config.logger import Logger
+from utility.plotting import plot_multi, plot_medium, plot_initial, plot_error
 from .solvers import Solver1DODE, Solver1DEXP, Solver1DLocal, Solver1DCloud
 
 # -------- CLASSES --------
@@ -184,3 +185,32 @@ class ForwardExperiment1D:
                 self.data[idx] = dd.io.load(self.base_data/f'data_{idx}.h5')
         self.logger.info('Data loaded.\n')
         return self.data
+
+    def plot(self, mode, solvers=None, **kwargs):
+        """
+        Plot the experiment.
+        
+        Args:
+            mode (str): Plotting mode. One of 'multi', 'medium', 'initial', 'error'.
+            solvers (list): List of solvers to plot. Defaults to None.
+            **kwargs: Keyword arguments for plotting functions.
+            
+        Returns:
+            matplotlib.pyplot.figure: Figure handle.
+        """
+        match mode:
+            case 'multi':
+                assert len(solvers) == 3, 'Please provide exactly three solvers for multi plotting.'
+                return plot_multi([self.data[solver] for solver in solvers], **kwargs)
+            case 'medium':
+                assert len(solvers) == 1, 'Please provide exactly one solver for medium plotting.'
+                plot_medium(self.configs[solvers[0]]['mu'],
+                            self.configs[solvers[0]]['rho'], **kwargs)
+            case 'initial':
+                assert len(solvers) == 1, 'Please provide exactly one solver for initial plotting.'
+                bcs = self.configs[solvers[0]]['bcs']
+                plot_initial(self.configs[solvers[0]]['u'], self.configs[solvers[0]]['v'],
+                             bcs, **kwargs)
+            case 'error':
+                assert len(solvers) == 2, 'Please provide exactly two solvers for error plotting.'
+                return plot_error(self.data[solvers[0]], self.data[solvers[1]], **kwargs)
