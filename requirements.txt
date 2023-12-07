@@ -1,0 +1,9 @@
+ipython >= 8.14.0
+matplotlib >= 3.8.0
+seaborn >= 0.12.2
+numpy >= 1.23.5
+scipy >= 1.10.1
+qiskit >= 0.44.2
+qiskit-aer >= 0.12.2
+qiskit_ibm_runtime >= 0.12.2
+qiskit-experiments >= 0.5.3

@@ -273,3 +273,5 @@ def plot_error(data1, data2, **kwargs):
     plt.tight_layout()
     plt.close(fig)
     return fig
+
+# TODO: Fix plot returns/plottings

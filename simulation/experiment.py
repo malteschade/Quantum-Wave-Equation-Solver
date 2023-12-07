@@ -36,10 +36,10 @@ and data loading.}
 import datetime
 import pathlib
 import json
+import pickle
 
 # Other modules
 import numpy as np
-import deepdish as dd
 
 # Own modules
 from config.logger import Logger
@@ -149,7 +149,7 @@ class ForwardExperiment1D:
             self.data[idx] = solver.run()
             end_time = datetime.datetime.now()
             self.logger.info('Saving data.')
-            dd.io.save(self.base_data/f'data_{idx}.h5', self.data[idx])
+            pickle.dump(self.data[idx], open(self.base_data/f'data_{idx}.pkl', 'wb'))
             self.logger.info(f'Solver {idx+1} completed in {end_time-start_time}.\n')
         return self.data
 
@@ -171,18 +171,18 @@ class ForwardExperiment1D:
         for idx in self.configs.keys():
             idx = int(idx)
             self.logger.info(f'Loading data for solver {idx+1}.')
-            if not (self.base_data/f'data_{idx}.h5').exists():
+            if not (self.base_data/f'data_{idx}.pkl').exists():
                 if self.configs[str(idx)]['solver'] == 'cloud':
                     self.logger.warning(f'No data for solver {idx+1} found. Loading from cloud.')
                     solver = Solver1DCloud(self.base_data,
                                                       self.logger, **self.configs[str(idx)])
                     self.data[idx] = solver.load()
                     self.logger.info(f'Data for solver {idx+1} loaded from cloud.')
-                    dd.io.save(self.base_data/f'data_{idx}.h5', self.data[idx])
+                    pickle.dump(self.data[idx], open(self.base_data/f'data_{idx}.pkl', 'wb'))
                 else:
                     raise FileNotFoundError(f'No data for solver {idx+1} found.')
             else:
-                self.data[idx] = dd.io.load(self.base_data/f'data_{idx}.h5')
+                self.data[idx] = pickle.load(open(self.base_data/f'data_{idx}.pkl', 'rb'))
         self.logger.info('Data loaded.\n')
         return self.data
 
