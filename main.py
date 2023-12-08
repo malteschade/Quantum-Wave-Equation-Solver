@@ -44,24 +44,37 @@ def main() -> None:
     # Create experiment
     experiment = ForwardExperiment1D(verbose=2)
 
-    # Define parameters
-    nx = 63
+    # Set Experiment Parameters
+    nx = 7
     parameters = {
-        'dx': 1,
-        'nx': nx, 
-        'dt': 0.001,
-        'nt': 50,
-        'order': 1,
-        'bcs': {'left': 'DBC', 'right': 'DBC'},
-        'mu': homogeneous(3e10, nx+1),
-        'rho': homogeneous(3000, nx),
-        'u': ricker(1, nx, nx//2, sigma=20),
-        'v': homogeneous(0, nx),
-        'backend': {}
+        'dx': 1,                                        # Grid spacing
+        'nx': nx,                                       # Number of grid points
+        'dt': 0.0001,                                   # Time stepping
+        'nt': 19,                                       # Number of time steps
+        'order': 1,                                     # Finite-difference order
+        'bcs': {'left': 'DBC', 'right': 'DBC'},         # Boundary conditions
+        'mu': raised_cosine(3e10, nx+1, nx, 6, 1e10),   # Elastic modulus distribution
+        'rho': raised_cosine(2e3, nx, nx-1, 6, 2e3),    # Density distribution
+        'u': spike(1, nx, nx//2+1),                     # Initial positions
+        'v': homogeneous(0, nx),                        # Initial velocities
+        'backend': {
+            'synthesis': 'MatrixExponential',           # Time Evolution Synthesis Method
+            'batch_size': 100,                          # Circuit Batch Size
+            'fitter': 'cvxpy_gaussian',                 # State Tomography fitter
+            'backend': 'ibmq_qasm_simulator',           # Cloud backend name
+            'shots': 1000,                              # Number of circuit samples
+            'optimization': 3,                          # Circuit optimization level
+            'resilience': 1,                            # Circuit resilience level
+            'seed': 0,                                  # Transpilation seed
+            'local_transpilation': False,               # Local transpilation
+            'method': 'statevector',                    # Classical simulation method
+            'fake': None,                               # Fake backend model
+            }
         }
 
     # Define solvers
     experiment.add_solver('ode', **parameters)
+    experiment.add_solver('exp', **parameters)
     experiment.add_solver('local', **parameters)
 
     # Run experiment
