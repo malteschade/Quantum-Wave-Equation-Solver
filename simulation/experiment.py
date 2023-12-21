@@ -46,6 +46,9 @@ from config.logger import Logger
 from utility.plotting import plot_multi, plot_medium, plot_initial, plot_error
 from .solvers import Solver1DODE, Solver1DEXP, Solver1DLocal, Solver1DCloud
 
+# -------- CONSTANTS --------
+EXT = '.pkl'
+
 # -------- CLASSES --------
 class ForwardExperiment1D:
     """
@@ -149,7 +152,7 @@ class ForwardExperiment1D:
             self.data[idx] = solver.run()
             end_time = datetime.datetime.now()
             self.logger.info('Saving data.')
-            pickle.dump(self.data[idx], open(self.base_data/f'data_{idx}.pkl', 'wb'))
+            pickle.dump(self.data[idx], open(self.base_data/f'data_{idx}{EXT}', 'wb'))
             self.logger.info(f'Solver {idx+1} completed in {end_time-start_time}.\n')
         return self.data
 
@@ -171,18 +174,19 @@ class ForwardExperiment1D:
         for idx in self.configs.keys():
             idx = int(idx)
             self.logger.info(f'Loading data for solver {idx+1}.')
-            if not (self.base_data/f'data_{idx}.pkl').exists():
+            if not (self.base_data/f'data_{idx}{EXT}').exists():
                 if self.configs[str(idx)]['solver'] == 'cloud':
                     self.logger.warning(f'No data for solver {idx+1} found. Loading from cloud.')
                     solver = Solver1DCloud(self.base_data,
                                                       self.logger, **self.configs[str(idx)])
                     self.data[idx] = solver.load()
                     self.logger.info(f'Data for solver {idx+1} loaded from cloud.')
-                    pickle.dump(self.data[idx], open(self.base_data/f'data_{idx}.pkl', 'wb'))
+                    pickle.dump(self.data[idx], open(self.base_data/f'data_{idx}{EXT}', 'wb'))
                 else:
                     raise FileNotFoundError(f'No data for solver {idx+1} found.')
             else:
-                self.data[idx] = pickle.load(open(self.base_data/f'data_{idx}.pkl', 'rb'))
+                self.data[idx] = pickle.load(open(self.base_data/f'data_{idx}{EXT}', 'rb'))
+
         self.logger.info('Data loaded.\n')
         return self.data
 

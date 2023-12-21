@@ -38,6 +38,10 @@ import seaborn as sns
 # -------- SETTINGS --------
 plt.rcParams['font.family'] = 'Times New Roman'
 
+# -------- CONSTANTS --------
+ENUMS = ['a.)', 'b.)', 'c.)', 'd.)', 'e.)', 'f.)']
+PATH_MULTIPLOT = './figures/forward_sim.png'
+
 # -------- FUNCTIONS --------
 def plot_multi(data, idx):
     """
@@ -105,6 +109,9 @@ def plot_multi(data, idx):
     ax_rho_mu = axes[0, 0]
     ax_mu = ax_rho_mu.twinx()
 
+    ax_rho_mu.text(0.05, 0.9, ENUMS[0], transform=ax_rho_mu.transAxes,
+                   fontsize=14)
+
     ax_rho_mu.plot(np.arange(nx+2), medium_fields[1], color='blue', label='$\\rho$')
     ax_rho_mu.set_ylabel('$\\rho$ [kg/m$^3$]', color='blue')
     ax_rho_mu.tick_params(axis='y', labelcolor='blue')
@@ -123,6 +130,8 @@ def plot_multi(data, idx):
 
     for i, t in enumerate(idx):
         ax = axes[(i+1) // 3, (i+1) % 3]
+        ax.text(0.05, 0.9, ENUMS[i+1], transform=ax.transAxes,
+                fontsize=14)
         for j, field in enumerate(data_fields):
             style = 'scatterplot' if j == 0 else 'lineplot'
             getattr(sns, style)(x=np.arange(nx+2), y=field[t], ax=ax,
@@ -138,6 +147,7 @@ def plot_multi(data, idx):
             ax.legend([],[], frameon=False)
 
     plt.tight_layout()
+    plt.savefig(PATH_MULTIPLOT, dpi=300)
     plt.close(fig)
     return fig
 
