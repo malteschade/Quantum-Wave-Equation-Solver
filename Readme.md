@@ -1,5 +1,5 @@
 # Quantum Elastic Wave Equation Solver
-#### v1.3
+#### v1.0.0
 *Authors: Malte Schade, Cyrill Bösch, Vaclav Hapla, Andreas Fichtner*
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-GNU-yellow.svg)](https://opensource.org/license/gpl-3-0/)
