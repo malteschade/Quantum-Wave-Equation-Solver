@@ -1,0 +1,8 @@
+This run was executed on IBM Brisbane with an old code version.
+The format of the config/log/data files might deviate.
+
+THis run provides the data for the plot in the paper:
+"A quantum computing concept for 1-D elastic wave simulation" by
+Malte Schade, Cyrill Bösch, Vaclav Hapla, and Andreas Fichtner,
+Department of Earth and Planetary Sciences, ETH Zurich,
+Sonneggstrasse 5, 8092 Zurich, Switzerland.

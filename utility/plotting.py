@@ -33,6 +33,7 @@
 # Other modules
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import seaborn as sns
 
 # -------- SETTINGS --------
@@ -279,6 +280,8 @@ def plot_error(data1, data2, **kwargs):
     ax.set_yscale('log')
     ax.set_ylim(*e_lim)
     ax.set_title('Relative L2 error over time')
+
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     plt.tight_layout()
     plt.close(fig)
