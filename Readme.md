@@ -9,6 +9,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.48550/arXiv.2312.14747-blue)](https://doi.org/10.48550/arXiv.2312.14747)
 
 # <p align="center"><img src="figures/forward_sim.png" width="1000"></p>
+> Calculated wave field of classical solvers and the quantum computer IBM Brisbane for different evolution times in a heterogeneous medium.
 
 ## Overview
 Quantum computing promises exponential runtime and space advantages compared to some classical computational algorithms. 
@@ -36,7 +37,7 @@ The code uses a data persistency system that allows for the reuse of previous ex
 
 The quantum simulation results are provided in multiple plots that compare different time evolution methods for different time steps and the connected deviations. 
 
-Enjoy your quantum experiments!
+Enjoy your quantum wave evolution experiments!
 
 ## References
 * Schade, M., Bösch, C., Hapla, V.,and Fichtner, A. (2023). [A quantum computing concept for 1-D elastic wave simulation](https://arxiv.org/pdf/2312.14747.pdf), arXiv:2312.14747 [physics.geo-ph].
