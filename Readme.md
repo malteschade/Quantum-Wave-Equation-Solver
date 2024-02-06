@@ -9,7 +9,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.48550/arXiv.2312.14747-blue)](https://doi.org/10.48550/arXiv.2312.14747)
 
 # <p align="center"><img src="figures/forward_sim.png" width="1000"></p>
-> Calculated wave field of classical solvers and the quantum computer IBM Brisbane for different evolution times in a heterogeneous medium.
+> Figure 1: Calculated wave field of classical solvers and the quantum computer IBM Brisbane for different evolution times in a heterogeneous medium.
 
 ## Overview
 Quantum computing promises exponential runtime and space advantages compared to some classical computational algorithms. 
