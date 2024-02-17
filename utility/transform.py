@@ -129,8 +129,8 @@ class FDTransform1DA:
         Returns:
             np.ndarray: The inverse square root mass matrix.
         """
-        return np.block([[np.diag(np.sqrt(1/rho)), z],
-                         [z, np.diag(np.sqrt(1/rho))]])
+        return np.block([[np.diag(np.sqrt(1/np.array(rho))), z],
+                         [z, np.diag(np.sqrt(1/np.array(rho)))]])
 
     def get_d(self, order: int, length: int, dx: float) -> np.ndarray:
         """
@@ -161,7 +161,7 @@ class FDTransform1DA:
             np.ndarray: The analytic Cholesky decomposition matrix.
         """
 
-        return np.diag(np.sqrt(mu)) @ d @ np.diag(np.sqrt(1/rho))
+        return np.diag(np.sqrt(np.array(mu))) @ d @ np.diag(np.sqrt(1/np.array(rho)))
 
     def get_k(self, u: np.ndarray)  -> np.ndarray:
         """

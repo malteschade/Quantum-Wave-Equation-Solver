@@ -28,7 +28,6 @@ on the measurement results of a quantum experiment.}
 import numpy as np
 from qiskit_experiments.library.tomography.basis import PauliMeasurementBasis
 from qiskit_experiments.library.tomography.fitters import (linear_inversion,
-                                                           scipy_linear_lstsq, scipy_gaussian_lstsq,
                                                            cvxpy_linear_lstsq, cvxpy_gaussian_lstsq)
 
 # -------- CONSTANTS --------
@@ -36,8 +35,6 @@ FITTER_FUNCTIONS = {
     'linear': linear_inversion,
     'cvxpy_gaussian': cvxpy_gaussian_lstsq,
     'cvxpy_linear': cvxpy_linear_lstsq,
-    'scipy_gaussian': scipy_gaussian_lstsq,
-    'scipy_linear': scipy_linear_lstsq,
 }
 
 # -------- CLASSES --------
@@ -50,12 +47,12 @@ class TomographyReal:
         self.logger = logger
         self.fitter = fitter
 
-    def run_tomography(self, result_groups: list, observables: list, times: list) -> np.ndarray:
+    def run_tomography(self, measurements: list, observables: list, times: list) -> np.ndarray:
         """
         Run a state tomography on the measurement results of a quantum experiment.
         
         Args:
-            result_groups (list): The measurement results of the experiment.
+            measurements (list): The measurement results of the experiment.
             observables (list): The observables that were measured.
             times (list): The times at which the tomography is performed.
             
@@ -63,15 +60,12 @@ class TomographyReal:
             np.ndarray: The tomography result states.
         """
 
-        measurements = [result for result_group in result_groups
-                        for result in result_group.decompose()]
-        quasi_dist = [m.quasi_dists[0] for m in measurements]
+        quasi_dist = [dist for m in measurements for dist in m.quasi_dists]
         max_key = max(max(dist.keys()) for dist in quasi_dist)
         _ = [dist.setdefault(i, 0) for dist in quasi_dist for i in range(max_key + 1)]
         freq = np.array([dist[key] for dist in quasi_dist for key in range(max_key + 1)])
         freq = np.reshape(freq, (len(quasi_dist), max_key+1))
-
-        shot_data = np.array([meta['shots'] for meta in measurements[0].metadata]*len(observables))
+        shot_data = np.array([measurements[0].metadata[0]['shots']] * len(observables))
         measurement_data = np.array([[{'Z': 0, 'X': 1, 'Y': 2}[char] for char in sublist]
                                      for sublist in observables])
         preparation_data = np.full((len(shot_data), 0), None)

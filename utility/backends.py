@@ -28,12 +28,13 @@ from typing import Dict, Tuple
 
 # Other modules
 from qiskit_ibm_runtime import QiskitRuntimeService, Session, Sampler, Options
+from qiskit_ibm_runtime.fake_provider import (FakeProviderForBackendV2, FakeSherbrooke,
+                                              FakeGuadalupeV2)
 from qiskit_aer.primitives import Sampler as AerSampler
 from qiskit_aer.noise import NoiseModel
-from qiskit.providers.fake_provider import (FakeBackendV2, FakeSherbrooke, FakeGuadalupeV2)
 
 # -------- CONSTANTS --------
-FAKE_PROVIDERS: Dict[str, FakeBackendV2] = {
+FAKE_PROVIDERS: Dict[str, FakeProviderForBackendV2] = {
     'guadalupe': FakeGuadalupeV2(),
     'brisbane': FakeSherbrooke(),
     'kyoto': FakeSherbrooke(),
