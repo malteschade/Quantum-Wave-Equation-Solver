@@ -65,19 +65,19 @@ def plot_multi(data, idx):
     solv_list = []
     for d in data:
         if d['settings']['solver'] == 'ode':
-            solv_list.append('Classical ODE Solver')
+            solv_list.append('ODE Solver')
         elif d['settings']['solver'] == 'exp':
-            solv_list.append('Classical Exponential Solver')
+            solv_list.append('Matrix Exponential Solver')
         elif d['settings']['solver'] == 'local' and not d['settings']['backend']['fake']:
-            solv_list.append('Noise Free Simulator')
+            solv_list.append('Quantum Simulator')
         elif d['settings']['solver'] == 'local' and d['settings']['backend']['fake']:
-            solv_list.append('Noise Model Simulator')
+            solv_list.append('Quantum Simulator')
         elif (d['settings']['solver'] == 'cloud' and
               d['settings']['backend']['backend'] == 'ibmq_qasm_simulator'):
             solv_list.append('IBM QASM Simulator')
         elif (d['settings']['solver'] == 'cloud' and
               d['settings']['backend']['backend'] != 'ibmq_qasm_simulator'):
-            solv_list.append('IBM Quantum Computer')
+            solv_list.append('Quantum Computer')
 
     # Prepare data with boundary conditions
     data_fields = []
@@ -100,7 +100,7 @@ def plot_multi(data, idx):
         medium_fields.append(field)
 
     # Plot multiplot
-    fig, axes = plt.subplots(2, 3, figsize=(14, 6))
+    fig, axes = plt.subplots(2, 3, figsize=(12, 5))
     ax_rho_mu = axes[0, 0]
     ax_mu = ax_rho_mu.twinx()
 
@@ -294,8 +294,8 @@ def plot_circuit(solver, **kwargs):
     g, i = kwargs.get("group", 0), kwargs.get("idx", 0)
     circuit = solver.circuit_groups[g][i]
     fig = circuit.draw(output='mpl')
-    fig.suptitle(f'Quantum Circuit (Group {g}, Index {i})')
-    fig.tight_layout()
+    fig.suptitle(f'Time Evolution Quantum Circuit (Group {g}, Index {i})')
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fig.savefig(PATH_CIRCUIT, dpi=300)
     return fig
 
