@@ -280,4 +280,20 @@ def plot_error(data1, data2, **kwargs):
     plt.close(fig)
     return fig
 
+def plot_circuit(solver, **kwargs):
+    """
+    Plotting function for plotting the circuit.
+    
+    Args:
+        solver (Solver1D): Solver object.
+        
+    Returns:
+        fig (matplotlib.pyplot.figure): Figure of the Quantum Circuit.
+    """
+    g, i = kwargs.get("group", 0), kwargs.get("idx", 0)
+    circuit = solver.circuit_groups[g][i]
+    fig = circuit.draw(output='mpl')
+    fig.suptitle(f'Time Evolution Quantum Circuit (Group {g}, Index {i})')
+    return fig
+
 # TODO: Fix plot returns/plottings

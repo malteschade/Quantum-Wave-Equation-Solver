@@ -44,6 +44,7 @@ SYNTHESIS: Dict[str, ProductFormula] = {
     'SuzukiTrotter': SuzukiTrotter(order=2, reps=2),
     'QDrift': QDrift(reps=4)
 }
+SIMPLE_CIRCUITS = False
 
 # -------- CLASSES --------
 class CircuitGen1DA:
@@ -103,26 +104,48 @@ class CircuitGen1DA:
         n = len(initial_state)
         if np.all(np.nonzero(initial_state)[0] == [n//4, n//4+1]):
             self.logger.info('Preparing efficient initial state (central spike).')
-            qc.ry(-2*np.arcsin(initial_state[n//4+1]), 0)
-            qc.x(num_qubits-2)
-            qc.z(num_qubits-2)
+            if SIMPLE_CIRCUITS:
+                qc_prep = QuantumCircuit(num_qubits, name='StatePreparation')
+                qc_prep.ry(-2*np.arcsin(initial_state[n//4+1]), 0)
+                qc_prep.x(num_qubits-2)
+                qc_prep.z(num_qubits-2)
+                qc.append(qc_prep, qr)
+            else:
+                qc.ry(-2*np.arcsin(initial_state[n//4+1]), 0)
+                qc.x(num_qubits-2)
+                qc.z(num_qubits-2)
         else:
             self.logger.info('Preparing arbitrary initial state.')
-            qc.append(StatePreparation(initial_state), qr)
+            qc.append(StatePreparation(initial_state, label='StatePreparation'), qr)
         qc.barrier()
 
         circuits = []
         for idx, time in enumerate(times):
             self.logger.info(f'Generating circuits for step: {idx+1} | {len(times)}.')
-            evo = PauliEvolutionGate(op, time=time, synthesis=synthesis)
+            if SIMPLE_CIRCUITS:
+                evo = PauliEvolutionGate(op, time=time, synthesis=synthesis,
+                                         label='TimeEvolution')
+            else:
+                evo = PauliEvolutionGate(op, time=time, synthesis=synthesis,
+                                         label=f'exp(-i{time}H)')
             qc_evolution = qc.copy()
-            qc_evolution.append(evo.definition, qr)
+            qc_evolution.append(evo, qr)
             qc_evolution.barrier()
 
             for observable in observables:
                 qc_measurement = qc_evolution.copy()
-                for i, obs in enumerate(observable):
-                    qc_measurement.append(self.meas_circuits[obs], [i])
+                if SIMPLE_CIRCUITS:
+                    qc_obs = QuantumCircuit(num_qubits, name=f'Observable {observable}')
+                    for i, obs in enumerate(observable):
+                        qc_obs.append(self.meas_circuits[obs], [i])
+                    qc_measurement.append(qc_obs, qr)
+                else:
+                    for i, obs in enumerate(observable):
+                        match obs:
+                            case 'Z': pass
+                            case 'X': qc_measurement.h(i)
+                            case 'Y': qc_measurement.sdg(i)
+
                 qc_measurement.barrier()
                 qc_measurement.measure(qr, cr)
 

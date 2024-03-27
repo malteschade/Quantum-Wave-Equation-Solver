@@ -273,6 +273,7 @@ class Solver1DLocal(Solver1D):
         self.st.set_u(self.kwargs['u'], 0)
         self.st.set_v(self.kwargs['v'], 0)
         self.st.forward_state(0, self.tf.t @ self.tf.sqrt_m)
+        self.circuit_groups = []
         self.logger.info('Initial state transformed.')
 
     def run(self) -> Dict[str, Any]:
@@ -299,7 +300,7 @@ class Solver1DLocal(Solver1D):
 
         self.logger.info('Generating circuits.')
         circuit_gen = CircuitGen1DA(self.logger, backend.fake_backend)
-        circuit_groups = circuit_gen.tomography_circuits(
+        self.circuit_groups = circuit_gen.tomography_circuits(
             self.st.get_state(0),
             self.tf.h,
             self.times[1:],
@@ -310,7 +311,7 @@ class Solver1DLocal(Solver1D):
             self.kwargs['backend']['local_transpilation'])
 
         self.logger.info('Submitting jobs to backend.')
-        jobs = [sampler.run(circuits) for circuits in circuit_groups]
+        jobs = [sampler.run(circuits) for circuits in self.circuit_groups]
         self.logger.info('Jobs submitted.')
         _wait_for_completion(jobs, self.logger)
         result_groups = [job.result() for job in jobs]

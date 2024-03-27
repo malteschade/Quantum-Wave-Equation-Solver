@@ -36,7 +36,7 @@ import numpy as np
 
 # Own modules
 from config.logger import Logger
-from utility.plotting import plot_multi, plot_medium, plot_initial, plot_error
+from utility.plotting import plot_multi, plot_medium, plot_initial, plot_error, plot_circuit
 from .solvers import Solver1DODE, Solver1DEXP, Solver1DLocal, Solver1DCloud
 
 # -------- CONSTANTS --------
@@ -188,7 +188,7 @@ class ForwardExperiment1D:
         Plot the experiment.
         
         Args:
-            mode (str): Plotting mode. One of 'multi', 'medium', 'initial', 'error'.
+            mode (str): Plotting mode. One of 'multi', 'medium', 'initial', 'error','circuit'.
             solvers (list): List of solvers to plot. Defaults to None.
             **kwargs: Keyword arguments for plotting functions.
             
@@ -211,3 +211,8 @@ class ForwardExperiment1D:
             case 'error':
                 assert len(solvers) == 2, 'Please provide exactly two solvers for error plotting.'
                 return plot_error(self.data[solvers[0]], self.data[solvers[1]], **kwargs)
+            case 'circuit':
+                assert len(solvers) == 1, 'Please provide exactly one solver for circuit plotting.'
+                return plot_circuit(self.solvers[solvers[0]], **kwargs)
+            case _:
+                raise ValueError('Invalid plotting mode.')

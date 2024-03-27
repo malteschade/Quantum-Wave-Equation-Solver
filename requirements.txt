@@ -1,6 +1,7 @@
 ipython >= 8.14.0 
 ipykernel >= 6.28.0
 matplotlib >= 3.8.0
+pylatexenc >= 2.10
 seaborn >= 0.12.2
 numpy >= 1.23.5
 scipy >= 1.10.1
