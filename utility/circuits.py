@@ -44,7 +44,7 @@ SYNTHESIS: Dict[str, ProductFormula] = {
     'SuzukiTrotter': SuzukiTrotter(order=2, reps=2),
     'QDrift': QDrift(reps=4)
 }
-SIMPLE_CIRCUITS = True
+SIMPLE_CIRCUITS = False
 
 # -------- CLASSES --------
 class CircuitGen1DA:
