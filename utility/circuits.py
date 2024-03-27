@@ -44,7 +44,7 @@ SYNTHESIS: Dict[str, ProductFormula] = {
     'SuzukiTrotter': SuzukiTrotter(order=2, reps=2),
     'QDrift': QDrift(reps=4)
 }
-SIMPLE_CIRCUITS = False
+SIMPLE_CIRCUITS = True
 
 # -------- CLASSES --------
 class CircuitGen1DA:
@@ -135,7 +135,7 @@ class CircuitGen1DA:
             for observable in observables:
                 qc_measurement = qc_evolution.copy()
                 if SIMPLE_CIRCUITS:
-                    qc_obs = QuantumCircuit(num_qubits, name=f'Observable {observable}')
+                    qc_obs = QuantumCircuit(num_qubits, name=f'Observable\n({"".join(observable)})')
                     for i, obs in enumerate(observable):
                         qc_obs.append(self.meas_circuits[obs], [i])
                     qc_measurement.append(qc_obs, qr)

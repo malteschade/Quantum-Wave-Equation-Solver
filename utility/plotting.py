@@ -35,6 +35,7 @@ plt.rcParams['font.family'] = 'Times New Roman'
 # -------- CONSTANTS --------
 ENUMS = ['a.)', 'b.)', 'c.)', 'd.)', 'e.)', 'f.)']
 PATH_MULTIPLOT = './figures/forward_sim.png'
+PATH_CIRCUIT = './figures/circuit.png'
 
 # -------- FUNCTIONS --------
 def plot_multi(data, idx):
@@ -293,7 +294,9 @@ def plot_circuit(solver, **kwargs):
     g, i = kwargs.get("group", 0), kwargs.get("idx", 0)
     circuit = solver.circuit_groups[g][i]
     fig = circuit.draw(output='mpl')
-    fig.suptitle(f'Time Evolution Quantum Circuit (Group {g}, Index {i})')
+    fig.suptitle(f'Quantum Circuit (Group {g}, Index {i})')
+    fig.tight_layout()
+    fig.savefig(PATH_CIRCUIT, dpi=300)
     return fig
 
 # TODO: Fix plot returns/plottings

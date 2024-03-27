@@ -38,5 +38,8 @@ The quantum simulation results are provided in multiple plots that compare diffe
 
 Enjoy your quantum wave evolution experiments!
 
+# <p align="center"><img src="figures/circuit.png" width="1000"></p>
+> Figure 2: A quantum circuit for the time evolution problem shown in Figure 1 with four distinct algorithmic sections.
+
 ## References
 * Schade, M., Bösch, C., Hapla, V.,and Fichtner, A. (2023). [A quantum computing concept for 1-D elastic wave simulation](https://arxiv.org/pdf/2312.14747.pdf), arXiv:2312.14747 [physics.geo-ph].
