@@ -163,3 +163,4 @@ cython_debug/
 data/*
 *.mp4
 .DS_Store
+.vscode/*

@@ -44,7 +44,7 @@ class ProcessorBase:
     def _set_val2(self, values: np.ndarray, index: int) -> None:
         self.values_2[index] = values
 
-    def _get_vals(self, index) -> tuple([np.ndarray, np.ndarray]):
+    def _get_vals(self, index) -> tuple[np.ndarray, np.ndarray]:
         return self.values_1[index], self.values_2[index]
 
 class MediumProcessor(ProcessorBase):
@@ -72,7 +72,7 @@ class MediumProcessor(ProcessorBase):
         """
         self._set_val2(values, 0)
 
-    def get_medium(self) -> tuple([np.ndarray, np.ndarray]):
+    def get_medium(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Get the elastic modulus and density values of the medium.
         
@@ -122,7 +122,7 @@ class StateProcessor(ProcessorBase):
         assert index < self._nt, 'index must be less than nt'
         self._set_val2(values, index)
 
-    def get_values(self, index) -> tuple([np.ndarray, np.ndarray]):
+    def get_values(self, index) -> tuple[np.ndarray, np.ndarray]:
         """
         Get the position and velocity values of the state.
         
