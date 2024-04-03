@@ -189,7 +189,8 @@ class LocalBackend(BaseBackend):
         self.logger.info('Initializing sampler backend.')
         self.logger.debug(f'Backend options: {self.options}')
         sampler = AerSampler(
-        backend_options={#**self.options.simulator.__dict__, # TODO: None values cause problems! Simulator options dont work.
+        # TODO: None values cause problems! Simulator options dont work.
+        backend_options={#**self.options.simulator.__dict__,
                              **{'method': self.kwargs['method'],
                              'max_parallel_threads': 0,
                              'max_parallel_experiments': 64,

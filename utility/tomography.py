@@ -91,15 +91,13 @@ class TomographyReal:
             state = eigvec[:, np.argmax(eigval)]
             return state
 
-        states = []
+        states = np.zeros((len(times), 2**len(observables[0])), dtype=complex)
         with ThreadPoolExecutor() as executor:
             future_to_index = {executor.submit(process_time_step, i): i for i in range(len(times))}
-
             for future in as_completed(future_to_index):
-                state = future.result()
-                states.append(state)
-
-        return np.array(states)
+                index = future_to_index[future]
+                states[index] = future.result()
+        return states
 
 # -------- FUNCTIONS --------
 def parallel_transport(states: np.ndarray, initial_state: np.ndarray) -> np.ndarray:
