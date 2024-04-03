@@ -49,7 +49,6 @@ def plot_multi(data, idx):
     Returns:
         fig (matplotlib.pyplot.figure): Figure handle.
     """
-    assert len(data) == 3, "Only three solvers supported"
     assert len(idx) == 5, "Please provide 5 time indices as idx for plotting"
     assert max(idx) < len(data[0]['times']), "idx out of range"
 

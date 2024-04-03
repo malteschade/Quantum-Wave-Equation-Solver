@@ -197,7 +197,6 @@ class ForwardExperiment1D:
         """
         match mode:
             case 'multi':
-                assert len(solvers) == 3, 'Please provide exactly three solvers for multi plotting.'
                 return plot_multi([self.data[solver] for solver in solvers], **kwargs)
             case 'medium':
                 assert len(solvers) == 1, 'Please provide exactly one solver for medium plotting.'
