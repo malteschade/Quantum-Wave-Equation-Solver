@@ -104,9 +104,10 @@ class BaseBackend:
         self.fake_backend = FAKE_PROVIDERS.get(fake, None)
         simulator_options = {
             "seed_simulator": seed,
-            "coupling_map": self.fake_backend.coupling_map if self.fake_backend else None,
-            "noise_model": NoiseModel.from_backend(self.fake_backend) if self.fake_backend else None
             }
+        if self.fake_backend:
+            simulator_options["coupling_map"] = self.fake_backend.coupling_map
+            simulator_options["noise_model"] = NoiseModel.from_backend(self.fake_backend)
         transpile_options = {"skip_transpilation": local_transpilation}
         run_options = {"shots": shots}
         return Options(
@@ -188,9 +189,12 @@ class LocalBackend(BaseBackend):
         self.logger.info('Initializing sampler backend.')
         self.logger.debug(f'Backend options: {self.options}')
         sampler = AerSampler(
-        backend_options={**self.options.simulator.__dict__,
-                            **{'method': self.kwargs['method'],
-                            'max_parallel_experiments': self.kwargs['max_parallel_experiments']}},
+        backend_options={#**self.options.simulator.__dict__, # TODO: None values cause problems! Simulator options dont work.
+                             **{'method': self.kwargs['method'],
+                             'max_parallel_threads': 0,
+                             'max_parallel_experiments': 64,
+                             'max_parallel_shots': 1,
+                             'statevector_parallel_threshold': 4}},
         transpile_options={"seed_transpiler": self.kwargs['seed']},
         run_options=self.options.execution.__dict__)
         return (sampler, None)

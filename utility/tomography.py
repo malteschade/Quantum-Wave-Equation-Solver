@@ -24,6 +24,9 @@ on the measurement results of a quantum experiment.}
 """
 
 # -------- IMPORTS --------
+# Built-in modules
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 # Other modules
 import numpy as np
 from qiskit_experiments.library.tomography.basis import PauliMeasurementBasis
@@ -75,19 +78,27 @@ class TomographyReal:
             "measurement_qubits": tuple(range(len(measurement_data[0])))
         }
 
-        states = []
-        for i in range(len(times)):
+        def process_time_step(i):
             self.logger.info(f'Tomography step: {i+1} | {len(times)}.')
             freq_step = freq[i*len(observables):(i+1)*len(observables)]
             outcome_data = np.expand_dims(freq_step * shot_data[:, np.newaxis], axis=0)
             rho, metadata = FITTER_FUNCTIONS[self.fitter](
-                outcome_data, shot_data,measurement_data, preparation_data, **fitter_kwargs)
+                outcome_data, shot_data, measurement_data, preparation_data, **fitter_kwargs)
             eigval, eigvec = np.linalg.eig(rho)
             self.logger.debug(f'Eigenvalues: {eigval}')
             self.logger.debug(f'Eigenvectors: {eigvec}')
             self.logger.debug(f'Metadata: {metadata}')
             state = eigvec[:, np.argmax(eigval)]
-            states.append(state)
+            return state
+
+        states = []
+        with ThreadPoolExecutor() as executor:
+            future_to_index = {executor.submit(process_time_step, i): i for i in range(len(times))}
+
+            for future in as_completed(future_to_index):
+                state = future.result()
+                states.append(state)
+
         return np.array(states)
 
 # -------- FUNCTIONS --------

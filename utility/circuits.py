@@ -102,7 +102,8 @@ class CircuitGen1DA:
 
         self.logger.debug(initial_state)
         n = len(initial_state)
-        if np.all(np.nonzero(initial_state)[0] == [n//4, n//4+1]):
+        if (len(np.nonzero(initial_state)[0]) == 2) and \
+        np.all(np.nonzero(initial_state)[0] == [n//4, n//4+1]):
             self.logger.info('Preparing efficient initial state (central spike).')
             if SIMPLE_CIRCUITS:
                 qc_prep = QuantumCircuit(num_qubits, name='StatePreparation')

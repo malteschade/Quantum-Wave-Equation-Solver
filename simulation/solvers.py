@@ -481,6 +481,10 @@ def _wait_for_completion(jobs: List[object], logger: object, sleep_time: float =
         sleep(sleep_time)
         status = [job.status().name for job in jobs]
         logger.debug(f"Jobs status: {status}")
+        if 'ERROR' in status:
+            logger.debug(f"Fatal error occured: {[job.status() for job in jobs]}")
+            raise RuntimeError('Runtime error in simulating the quantum circuit.\
+                This might be a problem of your qiskit installation.')
         completed = [job.status().name == 'DONE' for job in jobs]
         logger.info(f"Jobs completed: {sum(completed)} | {len(jobs)}")
         all_completed = all(completed)
