@@ -61,7 +61,7 @@ def main() -> None:
             'seed': 0,                                  # Transpilation seed
             'local_transpilation': False,               # Local transpilation
             'method': 'statevector',                    # Classical simulation method
-            'fake': None,                               # Fake backend model
+            'fake': None,                               # Fake backend model (Currently not supported)
             }
         }
 

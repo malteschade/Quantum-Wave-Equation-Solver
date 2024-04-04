@@ -38,7 +38,7 @@ PATH_MULTIPLOT = './figures/forward_sim.png'
 PATH_CIRCUIT = './figures/circuit.png'
 
 # -------- FUNCTIONS --------
-def plot_multi(data, idx):
+def plot_multi(data, idx, shots=None, colors=['black', 'red', 'blue']):
     """
     Plotting function for plotting multiple solvers at different time steps.
     
@@ -62,21 +62,22 @@ def plot_multi(data, idx):
     digits = 4
 
     solv_list = []
-    for d in data:
+    for i, d in enumerate(data):
+        apx = f'({shots[i]} Shots)' if shots and shots[i] else ''
         if d['settings']['solver'] == 'ode':
-            solv_list.append('ODE Solver')
+            solv_list.append(f'ODE Solver {apx}')
         elif d['settings']['solver'] == 'exp':
-            solv_list.append('Matrix Exponential Solver')
+            solv_list.append(f'Matrix Exponential Solver {apx}')
         elif d['settings']['solver'] == 'local' and not d['settings']['backend']['fake']:
-            solv_list.append('Quantum Simulator')
+            solv_list.append(f'Quantum Simulator {apx}')
         elif d['settings']['solver'] == 'local' and d['settings']['backend']['fake']:
-            solv_list.append('Quantum Simulator')
+            solv_list.append(f'Quantum Simulator {apx}')
         elif (d['settings']['solver'] == 'cloud' and
               d['settings']['backend']['backend'] == 'ibmq_qasm_simulator'):
-            solv_list.append('IBM QASM Simulator')
+            solv_list.append(f'IBM QASM Simulator {apx}')
         elif (d['settings']['solver'] == 'cloud' and
               d['settings']['backend']['backend'] != 'ibmq_qasm_simulator'):
-            solv_list.append('Quantum Computer')
+            solv_list.append(f'Quantum Computer {apx}')
 
     # Prepare data with boundary conditions
     data_fields = []
@@ -130,7 +131,7 @@ def plot_multi(data, idx):
             style = 'scatterplot' if j == 0 else 'lineplot'
             getattr(sns, style)(x=np.arange(nx+2), y=field[t], ax=ax,
                                 label=solv_list[j],
-                                color=['black', 'red', 'blue'][j])
+                                color=colors[j])
         ax.set_title(f"t = {times[t]:.{digits}f} s")
         ax.set_xlabel("x [m]")
         ax.set_ylabel("u [$\\mu$ m]")
