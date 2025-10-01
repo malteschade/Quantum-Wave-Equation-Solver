@@ -26,6 +26,9 @@ We provide a **requirements** file specifying necessary dependency installations
 2) `conda create --name qcws python=3.12`
 3) `conda activate qcws`
 4) `pip install -r requirements.txt`
+5) 
+> [!CAUTION]
+> Due to breaking changes in newer versions of qiskit and qiskit aer, the version requirements are exact and demand python 3.12.
 
 ## Usage
 The project contains two **main** files with equivalent code: a Jupyter Notebook and a Python file.
